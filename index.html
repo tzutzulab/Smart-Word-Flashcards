@@ -5,15 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>智慧單字卡 - 學習中心</title>
     
+    <!-- 強制預載入圖示，解決 GitHub Pages 讀取延遲問題 -->
+    <link rel="preload" href="./icon.png" as="image">
+    
     <!-- PWA 核心設定 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="智慧單字卡">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon.png">
-    <link rel="icon" type="image/png" href="icon.png">
+    <!-- 使用相對路徑標註，確保子目錄讀取正常 -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./icon.png">
+    <link rel="icon" type="image/png" href="./icon.png">
     
     <!-- 外部資源 -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -47,19 +51,19 @@
             display: none;
         }
 
-        /* 原生安裝提示組件 */
+        /* 安裝提示組件 - 已修改為灰色系風格 */
         #installPrompt {
             position: fixed;
             bottom: 24px;
             left: 20px;
             right: 20px;
-            background: white;
+            background: #1e293b; /* 深灰色背景 Slate-800 */
             border-radius: 20px;
             padding: 18px;
-            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
             z-index: 100;
             display: none; 
-            border: 1px solid #e2e8f0;
+            border: 1px solid #334155;
             animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
@@ -75,40 +79,33 @@
     <div id="installPrompt">
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3 text-left">
-                <img src="icon.png" class="w-12 h-12 rounded-xl shadow-sm object-cover" alt="App Icon" onerror="this.src='https://ui-avatars.com/api/?name=Card&background=0EA5E9&color=fff'">
+                <!-- 即使 icon 讀取失敗也保證有頭像 -->
+                <img src="./icon.png" class="w-12 h-12 rounded-xl shadow-sm object-cover border border-slate-700" alt="App Icon" onerror="this.src='https://ui-avatars.com/api/?name=SW&background=334155&color=fff'">
                 <div>
-                    <h3 class="text-sm font-bold text-gray-800">安裝智慧單字卡</h3>
-                    <p class="text-xs text-gray-500">立即安裝以享受全螢幕學習體驗</p>
+                    <h3 class="text-sm font-bold text-white">安裝智慧單字卡</h3>
+                    <p class="text-xs text-slate-400">將 App 加入主畫面以便隨時學習</p>
                 </div>
             </div>
             <div class="flex space-x-2 shrink-0">
-                <button onclick="closePrompt()" class="text-xs text-gray-400 px-2 py-1">稍後</button>
-                <button id="installBtn" class="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm active:bg-blue-700">立即安裝</button>
+                <button onclick="closePrompt()" class="text-xs text-slate-500 font-bold px-2 py-1">稍後</button>
+                <button id="installBtn" class="bg-white text-slate-900 text-xs font-bold px-4 py-2 rounded-lg shadow-sm active:bg-slate-200">立即安裝</button>
             </div>
         </div>
     </div>
 
     <!-- 主選單內容 -->
-    <main class="max-w-2xl mx-auto px-6 w-full flex flex-col items-center justify-center overflow-y-auto py-10">
+    <main class="max-w-md mx-auto px-6 w-full flex flex-col items-center justify-center overflow-y-auto py-10">
         <header class="text-center mb-10">
+            <div class="mb-4 inline-block">
+                <img src="./icon.png" class="w-16 h-16 rounded-2xl shadow-md mx-auto" alt="Logo" onerror="this.style.display='none'">
+            </div>
             <h1 class="text-3xl font-bold text-gray-800 tracking-wider">智慧單字卡</h1>
             <p class="text-gray-500 text-sm mt-2 font-medium">個人語言學習中心</p>
         </header>
 
         <div class="flex flex-col space-y-4 w-full">
-            <!-- 韓文 -->
-            <a href="韓文智慧單字卡(完整版).html">
-                <div class="app-card bg-[#F0F9FF] border-[#BAE6FD] rounded-2xl p-5 flex items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                        <span class="text-3xl">🇰🇷</span>
-                        <h2 class="text-lg font-bold text-gray-800">韓文智慧單字卡</h2>
-                    </div>
-                    <div class="bg-[#0EA5E9] text-white text-[11px] py-1.5 px-4 rounded-full font-bold">進入</div>
-                </div>
-            </a>
-
-            <!-- 日文 -->
-            <a href="日文智慧單字卡(完整版).html">
+            <!-- 1. 日文 -->
+            <a href="./日文智慧單字卡(完整版).html" class="block">
                 <div class="app-card bg-[#FFF1F2] border-[#FECDD3] rounded-2xl p-5 flex items-center justify-between">
                     <div class="flex items-center space-x-4">
                         <span class="text-3xl">🇯🇵</span>
@@ -118,8 +115,19 @@
                 </div>
             </a>
 
-            <!-- 西文 -->
-            <a href="西文智慧單字卡(完整版).html">
+            <!-- 2. 英文 -->
+            <a href="./英文智慧單字卡(完整版).html" class="block">
+                <div class="app-card bg-[#FEFCE8] border-[#FEF08A] rounded-2xl p-5 flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-3xl">🇺🇸</span>
+                        <h2 class="text-lg font-bold text-gray-800">英文智慧單字卡</h2>
+                    </div>
+                    <div class="bg-[#FACC15] text-gray-800 text-[11px] py-1.5 px-4 rounded-full font-bold">進入</div>
+                </div>
+            </a>
+
+            <!-- 3. 西文 -->
+            <a href="./西文智慧單字卡(完整版).html" class="block">
                 <div class="app-card bg-[#F0FDFA] border-[#CCFBF1] rounded-2xl p-5 flex items-center justify-between">
                     <div class="flex items-center space-x-4">
                         <span class="text-3xl">🇪🇸</span>
@@ -129,8 +137,19 @@
                 </div>
             </a>
 
-            <!-- 法文 -->
-            <a href="法文智慧單字卡(完整版).html">
+            <!-- 4. 韓文 -->
+            <a href="./韓文智慧單字卡(完整版).html" class="block">
+                <div class="app-card bg-[#F0F9FF] border-[#BAE6FD] rounded-2xl p-5 flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-3xl">🇰🇷</span>
+                        <h2 class="text-lg font-bold text-gray-800">韓文智慧單字卡</h2>
+                    </div>
+                    <div class="bg-[#0EA5E9] text-white text-[11px] py-1.5 px-4 rounded-full font-bold">進入</div>
+                </div>
+            </a>
+
+            <!-- 5. 法文 -->
+            <a href="./法文智慧單字卡(完整版).html" class="block">
                 <div class="app-card bg-[#F5F3FF] border-[#DDD6FE] rounded-2xl p-5 flex items-center justify-between">
                     <div class="flex items-center space-x-4">
                         <span class="text-3xl">🇫🇷</span>
@@ -139,39 +158,35 @@
                     <div class="bg-[#8B5CF6] text-white text-[11px] py-1.5 px-4 rounded-full font-bold">進入</div>
                 </div>
             </a>
-
-            <!-- 英文 -->
-            <a href="英文智慧單字卡(完整版).html">
-                <div class="app-card bg-[#FEFCE8] border-[#FEF08A] rounded-2xl p-5 flex items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                        <span class="text-3xl">🇺🇸</span>
-                        <h2 class="text-lg font-bold text-gray-800">英文智慧單字卡</h2>
-                    </div>
-                    <div class="bg-[#FACC15] text-gray-800 text-[11px] py-1.5 px-4 rounded-full font-bold">進入</div>
-                </div>
-            </a>
         </div>
         
-        <footer class="mt-12 text-gray-300 text-[10px] uppercase tracking-widest">
-            Native App Mode v1.2
+        <footer class="mt-12 text-gray-300 text-[10px] uppercase tracking-widest text-center">
+            PWA Stable Edition v1.6
         </footer>
     </main>
 
     <script>
-        // 註冊 Service Worker 並監控狀態
+        /**
+         * 環境檢查：Service Worker 不支援 blob: 或沙盒協議。
+         * 如果在預覽環境下，將跳過註冊以避免錯誤，佈署到 HTTPS 域名後將自動恢復正常。
+         */
+        const isSupportedProtocol = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+
+        // 註冊 Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
+                if (!isSupportedProtocol) {
+                    console.log('%c[PWA]%c 偵測到沙盒預覽環境，跳過 SW 註冊以避免協議錯誤。', 'color: #fff; background: #f59e0b; padding: 2px 5px; border-radius: 3px;', '');
+                    return;
+                }
+
+                navigator.serviceWorker.register('./sw.js')
                 .then(reg => {
-                    console.log('SW 註冊成功，範圍:', reg.scope);
-                    // 檢查 SW 是否已激活 (Active)
-                    if (reg.active) {
-                        console.log('SW 目前狀態：已激活 (Active)');
-                    } else {
-                        console.log('SW 目前狀態：安裝中/等待中，請嘗試重新整理頁面。');
-                    }
+                    console.log('%c[PWA]%c SW 註冊成功:', 'color: #fff; background: #0ea5e9; padding: 2px 5px; border-radius: 3px;', '', reg.scope);
                 })
-                .catch(err => console.error('SW 註冊失敗，請確認 sw.js 檔案路徑:', err));
+                .catch(err => {
+                    console.error('[PWA] SW 註冊失敗:', err);
+                });
             });
         }
 
@@ -179,28 +194,17 @@
         const installPrompt = document.getElementById('installPrompt');
         const installBtn = document.getElementById('installBtn');
 
-        // 偵測機制：如果 5 秒內沒觸發 beforeinstallprompt，提示開發者檢查環境
-        let promptTriggered = false;
-        setTimeout(() => {
-            if (!promptTriggered) {
-                console.warn('PWA 診斷：尚未觸發安裝事件。');
-                console.log('檢查清單：');
-                console.log('1. 是否使用 HTTPS？ (PWA 強制要求)');
-                console.log('2. manifest.json 內容是否正確？ (可檢查 DevTools -> Application -> Manifest)');
-                console.log('3. 是否已存在 icon.png？ (至少需要 192x192)');
-            }
-        }, 5000);
-
         // 監聽原生安裝事件
         window.addEventListener('beforeinstallprompt', (e) => {
-            console.log('系統偵測到 PWA 安裝許可條件已達成');
-            promptTriggered = true;
+            console.log('%c[PWA]%c 偵測到安裝條件已達成', 'color: #fff; background: #22c55e; padding: 2px 5px; border-radius: 3px;', '');
             e.preventDefault();
             deferredPrompt = e;
-            installPrompt.style.display = 'block';
+            setTimeout(() => {
+                installPrompt.style.display = 'block';
+            }, 1000);
         });
 
-        // 點擊「立即安裝」按鈕喚起系統視窗
+        // 安裝按鈕邏輯
         installBtn.addEventListener('click', async () => {
             if (!deferredPrompt) return;
             deferredPrompt.prompt();
@@ -215,10 +219,14 @@
         }
 
         window.addEventListener('appinstalled', () => {
-            console.log('App 已成功安裝');
+            console.log('App 已成功安裝於設備');
             installPrompt.style.display = 'none';
-            deferredPrompt = null;
         });
+
+        // 偵錯輔助：檢查資源可用性
+        fetch('./icon.png', { method: 'HEAD' })
+            .then(() => console.log('%c[Debug]%c 資源 icon.png 在目前環境可存取', 'color: #fff; background: #8b5cf6; padding: 2px 5px; border-radius: 3px;', ''))
+            .catch(() => console.warn('[Debug] 資源 icon.png 在目前環境不可直接存取，這在預覽環境是正常的。'));
     </script>
 </body>
 </html>
