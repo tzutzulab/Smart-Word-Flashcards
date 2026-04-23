@@ -51,44 +51,53 @@
             display: none;
         }
 
-        /* 安裝提示組件 - 已修改為灰色系風格 */
+        /* 安裝提示組件 - 已調整為畫面正中央與無尾熊灰色調 */
         #installPrompt {
             position: fixed;
-            bottom: 24px;
-            left: 20px;
-            right: 20px;
-            background: #1e293b; /* 深灰色背景 Slate-800 */
-            border-radius: 20px;
-            padding: 18px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            max-width: 320px;
+            background: #a8a29e; /* 參考無尾熊毛色的暖灰色 */
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
             z-index: 100;
             display: none; 
-            border: 1px solid #334155;
-            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid #78716c;
+            text-align: center;
+            animation: fadeInCenter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        @keyframes slideUp {
-            from { transform: translateY(150%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        @keyframes fadeInCenter {
+            from { transform: translate(-50%, -40%); opacity: 0; }
+            to { transform: translate(-50%, -50%); opacity: 1; }
         }
     </style>
 </head>
 <body class="h-screen flex items-center justify-center">
 
-    <!-- 系統原生安裝提示框 -->
+    <!-- 系統原生安裝提示框 - 已重構為中央垂直佈局 -->
     <div id="installPrompt">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-3 text-left">
-                <!-- 即使 icon 讀取失敗也保證有頭像 -->
-                <img src="./icon.png" class="w-12 h-12 rounded-xl shadow-sm object-cover border border-slate-700" alt="App Icon" onerror="this.src='https://ui-avatars.com/api/?name=SW&background=334155&color=fff'">
-                <div>
-                    <h3 class="text-sm font-bold text-white">安裝智慧單字卡</h3>
-                    <p class="text-xs text-slate-400">將 App 加入主畫面以便隨時學習</p>
-                </div>
+        <div class="flex flex-col items-center space-y-4">
+            <!-- 第一行：ICON -->
+            <img src="./icon.png" class="w-20 h-20 rounded-2xl shadow-lg object-cover border-2 border-stone-400" alt="App Icon" onerror="this.src='https://ui-avatars.com/api/?name=SW&background=78716c&color=fff'">
+            
+            <!-- 第二行：安裝標題 -->
+            <div class="space-y-1">
+                <h3 class="text-lg font-bold text-white">安裝智慧單字卡</h3>
+                <p class="text-xs text-stone-200">將 App 加入主畫面隨時學習</p>
             </div>
-            <div class="flex space-x-2 shrink-0">
-                <button onclick="closePrompt()" class="text-xs text-slate-500 font-bold px-2 py-1">稍後</button>
-                <button id="installBtn" class="bg-white text-slate-900 text-xs font-bold px-4 py-2 rounded-lg shadow-sm active:bg-slate-200">立即安裝</button>
+            
+            <!-- 第三行：稍後與立即安裝按鈕 -->
+            <div class="flex w-full space-x-3 pt-2">
+                <button onclick="closePrompt()" class="flex-1 text-sm text-stone-100 font-medium py-3 rounded-xl border border-stone-500/50 active:bg-stone-500/30">
+                    稍後
+                </button>
+                <button id="installBtn" class="flex-1 bg-white text-stone-800 text-sm font-bold py-3 rounded-xl shadow-md active:bg-stone-100">
+                    立即安裝
+                </button>
             </div>
         </div>
     </div>
