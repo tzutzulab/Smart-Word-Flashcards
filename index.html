@@ -156,6 +156,19 @@
                     <div class="bg-[#8B5CF6] text-white text-[11px] py-1.5 px-4 rounded-full font-bold">進入</div>
                 </div>
             </a>
+
+            <!-- 新增數據管理中心：完全對齊原本按鈕風格 -->
+            <div class="flex space-x-3 mt-2">
+                <button onclick="exportData()" class="flex-1 app-card bg-gray-100 border-gray-200 rounded-2xl p-3 flex items-center justify-center space-x-2">
+                    <span class="text-xl">📥</span>
+                    <span class="text-sm font-bold text-gray-700">下載紀錄</span>
+                </button>
+                <button onclick="triggerImport()" class="flex-1 app-card bg-gray-100 border-gray-200 rounded-2xl p-3 flex items-center justify-center space-x-2">
+                    <span class="text-xl">📤</span>
+                    <span class="text-sm font-bold text-gray-700">還原紀錄</span>
+                </button>
+            </div>
+            <input type="file" id="importFile" class="hidden" accept=".json" onchange="importData(event)">
         </div>
     </main>
 
@@ -205,6 +218,67 @@
         window.addEventListener('appinstalled', () => {
             installPrompt.style.display = 'none';
         });
+
+        // --- 以下為新增的數據管理邏輯，嚴格追加於原始腳本末端 ---
+
+        /**
+         * 匯出數據：將 localStorage 內容打包下載
+         */
+        function exportData() {
+            try {
+                const backup = {};
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    backup[key] = localStorage.getItem(key);
+                }
+
+                if (Object.keys(backup).length === 0) {
+                    alert("目前尚無任何單字學習紀錄。");
+                    return;
+                }
+
+                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+                a.href = url;
+                a.download = `智慧單字卡_全紀錄備份_${date}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                alert("匯出備份失敗。");
+            }
+        }
+
+        function triggerImport() {
+            document.getElementById('importFile').click();
+        }
+
+        /**
+         * 匯入數據：讀取並寫入 localStorage
+         */
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (confirm("匯入備份將會【覆蓋】目前所有語言的單字紀錄，確定要還原嗎？")) {
+                        localStorage.clear();
+                        Object.keys(data).forEach(key => {
+                            localStorage.setItem(key, data[key]);
+                        });
+                        alert("✅ 資料還原成功！");
+                        location.reload();
+                    }
+                } catch (err) {
+                    alert("檔案格式錯誤，請確定這是正確的 JSON 備份檔。");
+                }
+            };
+            reader.readAsText(file);
+        }
     </script>
 </body>
 </html>
