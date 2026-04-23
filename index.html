@@ -27,13 +27,19 @@
         body {
             font-family: 'Noto Sans TC', sans-serif;
             background-color: #f8fafc;
-            overflow: hidden;
+            /* 強制禁止捲動，固定畫面 */
+            overflow: hidden; 
             height: 100vh;
+            width: 100vw;
             margin: 0;
             padding: 0;
             display: flex;
+            align-items: center;
+            justify-content: center;
             flex-direction: column;
             -webkit-tap-highlight-color: transparent;
+            /* 防止 iOS 橡皮筋回彈效果 */
+            position: fixed; 
         }
 
         /* 語言卡片交互樣式 */
@@ -46,12 +52,12 @@
             background-color: #ffffff;
         }
 
-        /* 隱藏滾動條 */
+        /* 隱藏捲動條 (備用) */
         ::-webkit-scrollbar {
             display: none;
         }
 
-        /* 安裝提示組件 - 已調整為畫面正中央與無尾熊灰色調 */
+        /* 安裝提示組件 - 已調整為半透明毛玻璃質感 */
         #installPrompt {
             position: fixed;
             top: 50%;
@@ -59,13 +65,15 @@
             transform: translate(-50%, -50%);
             width: 85%;
             max-width: 320px;
-            background: #a8a29e; /* 參考無尾熊毛色的暖灰色 */
-            border-radius: 24px;
+            background: rgba(168, 162, 158, 0.85); /* 暖灰色半透明 (無尾熊色調) */
+            backdrop-filter: blur(12px); /* 毛玻璃效果 */
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 28px;
             padding: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
             z-index: 100;
             display: none; 
-            border: 1px solid #78716c;
+            border: 1px solid rgba(120, 113, 108, 0.4);
             text-align: center;
             animation: fadeInCenter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
@@ -76,35 +84,35 @@
         }
     </style>
 </head>
-<body class="h-screen flex items-center justify-center">
+<body class="h-screen w-screen flex items-center justify-center">
 
-    <!-- 系統原生安裝提示框 - 已重構為中央垂直佈局 -->
+    <!-- 系統原生安裝提示框 - 保持中央垂直佈局，細節透明度優化 -->
     <div id="installPrompt">
         <div class="flex flex-col items-center space-y-4">
             <!-- 第一行：ICON -->
-            <img src="./icon.png" class="w-20 h-20 rounded-2xl shadow-lg object-cover border-2 border-stone-400" alt="App Icon" onerror="this.src='https://ui-avatars.com/api/?name=SW&background=78716c&color=fff'">
+            <img src="./icon.png" class="w-20 h-20 rounded-2xl shadow-lg object-cover border-2 border-stone-400/50" alt="App Icon" onerror="this.src='https://ui-avatars.com/api/?name=SW&background=78716c&color=fff'">
             
             <!-- 第二行：安裝標題 -->
             <div class="space-y-1">
-                <h3 class="text-lg font-bold text-white">安裝智慧單字卡</h3>
-                <p class="text-xs text-stone-200">將 App 加入主畫面隨時學習</p>
+                <h3 class="text-lg font-bold text-white drop-shadow-sm">安裝智慧單字卡</h3>
+                <p class="text-xs text-stone-100/90">將 App 加入主畫面隨時學習</p>
             </div>
             
             <!-- 第三行：稍後與立即安裝按鈕 -->
             <div class="flex w-full space-x-3 pt-2">
-                <button onclick="closePrompt()" class="flex-1 text-sm text-stone-100 font-medium py-3 rounded-xl border border-stone-500/50 active:bg-stone-500/30">
+                <button onclick="closePrompt()" class="flex-1 text-sm text-white font-medium py-3 rounded-xl border border-white/20 bg-white/10 active:bg-white/20 transition-colors">
                     稍後
                 </button>
-                <button id="installBtn" class="flex-1 bg-white text-stone-800 text-sm font-bold py-3 rounded-xl shadow-md active:bg-stone-100">
+                <button id="installBtn" class="flex-1 bg-white text-stone-800 text-sm font-bold py-3 rounded-xl shadow-md active:bg-stone-100 transition-transform active:scale-95">
                     立即安裝
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- 主選單內容 -->
-    <main class="max-w-md mx-auto px-6 w-full flex flex-col items-center justify-center overflow-y-auto py-10">
-        <header class="text-center mb-10">
+    <!-- 主選單內容：確保在中間且不捲動 -->
+    <main class="max-w-md mx-auto px-6 w-full flex flex-col items-center justify-center py-6">
+        <header class="text-center mb-8">
             <div class="mb-4 inline-block">
                 <img src="./icon.png" class="w-16 h-16 rounded-2xl shadow-md mx-auto" alt="Logo" onerror="this.style.display='none'">
             </div>
@@ -112,10 +120,10 @@
             <p class="text-gray-500 text-sm mt-2 font-medium">個人語言學習中心</p>
         </header>
 
-        <div class="flex flex-col space-y-4 w-full">
+        <div class="flex flex-col space-y-3 w-full">
             <!-- 1. 日文 -->
             <a href="./日文智慧單字卡(完整版).html" class="block">
-                <div class="app-card bg-[#FFF1F2] border-[#FECDD3] rounded-2xl p-5 flex items-center justify-between">
+                <div class="app-card bg-[#FFF1F2] border-[#FECDD3] rounded-2xl p-4 flex items-center justify-between">
                     <div class="flex items-center space-x-4">
                         <span class="text-3xl">🇯🇵</span>
                         <h2 class="text-lg font-bold text-gray-800">日文智慧單字卡</h2>
@@ -126,7 +134,7 @@
 
             <!-- 2. 英文 -->
             <a href="./英文智慧單字卡(完整版).html" class="block">
-                <div class="app-card bg-[#FEFCE8] border-[#FEF08A] rounded-2xl p-5 flex items-center justify-between">
+                <div class="app-card bg-[#FEFCE8] border-[#FEF08A] rounded-2xl p-4 flex items-center justify-between">
                     <div class="flex items-center space-x-4">
                         <span class="text-3xl">🇺🇸</span>
                         <h2 class="text-lg font-bold text-gray-800">英文智慧單字卡</h2>
@@ -137,7 +145,7 @@
 
             <!-- 3. 西文 -->
             <a href="./西文智慧單字卡(完整版).html" class="block">
-                <div class="app-card bg-[#F0FDFA] border-[#CCFBF1] rounded-2xl p-5 flex items-center justify-between">
+                <div class="app-card bg-[#F0FDFA] border-[#CCFBF1] rounded-2xl p-4 flex items-center justify-between">
                     <div class="flex items-center space-x-4">
                         <span class="text-3xl">🇪🇸</span>
                         <h2 class="text-lg font-bold text-gray-800">西文智慧單字卡</h2>
@@ -148,7 +156,7 @@
 
             <!-- 4. 韓文 -->
             <a href="./韓文智慧單字卡(完整版).html" class="block">
-                <div class="app-card bg-[#F0F9FF] border-[#BAE6FD] rounded-2xl p-5 flex items-center justify-between">
+                <div class="app-card bg-[#F0F9FF] border-[#BAE6FD] rounded-2xl p-4 flex items-center justify-between">
                     <div class="flex items-center space-x-4">
                         <span class="text-3xl">🇰🇷</span>
                         <h2 class="text-lg font-bold text-gray-800">韓文智慧單字卡</h2>
@@ -159,7 +167,7 @@
 
             <!-- 5. 法文 -->
             <a href="./法文智慧單字卡(完整版).html" class="block">
-                <div class="app-card bg-[#F5F3FF] border-[#DDD6FE] rounded-2xl p-5 flex items-center justify-between">
+                <div class="app-card bg-[#F5F3FF] border-[#DDD6FE] rounded-2xl p-4 flex items-center justify-between">
                     <div class="flex items-center space-x-4">
                         <span class="text-3xl">🇫🇷</span>
                         <h2 class="text-lg font-bold text-gray-800">法文智慧單字卡</h2>
@@ -169,7 +177,7 @@
             </a>
         </div>
         
-        <footer class="mt-12 text-gray-300 text-[10px] uppercase tracking-widest text-center">
+        <footer class="mt-8 text-gray-300 text-[10px] uppercase tracking-widest text-center">
             PWA Stable Edition v1.6
         </footer>
     </main>
