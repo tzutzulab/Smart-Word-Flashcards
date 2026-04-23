@@ -9,9 +9,13 @@
     
     <!-- PWA 核心設定 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- 修改此處：設為 default 配合白色背景，系統圖示會顯示為深色 -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="智慧單字卡">
     <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- 修改此處：將主題色固定為白色 -->
+    <meta name="theme-color" content="#ffffff">
     
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="./icon.png">
@@ -46,7 +50,7 @@
             background-color: #ffffff;
         }
 
-        /* 仿拾光故事集的高級毛玻璃安裝提示框 */
+        /* 高級毛玻璃安裝提示框 */
         #installPrompt {
             position: fixed;
             top: 50%;
@@ -75,7 +79,7 @@
 </head>
 <body class="h-screen w-screen flex items-center justify-center">
 
-    <!-- 安裝提示框 (更新為有趣文案與質感樣式) -->
+    <!-- 安裝提示框 -->
     <div id="installPrompt">
         <div class="flex flex-col items-center space-y-5">
             <img src="./icon.png" class="w-20 h-20 rounded-2xl shadow-sm object-cover border border-gray-100" alt="App Icon">
@@ -156,6 +160,7 @@
     </main>
 
     <script>
+        // 檢查環境是否支援 Service Worker
         const isSecureContext = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
 
         if ('serviceWorker' in navigator && isSecureContext) {
