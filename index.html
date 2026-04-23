@@ -46,6 +46,7 @@
             background-color: #ffffff;
         }
 
+        /* 仿拾光故事集的高級毛玻璃安裝提示框 */
         #installPrompt {
             position: fixed;
             top: 50%;
@@ -53,40 +54,41 @@
             transform: translate(-50%, -50%);
             width: 85%;
             max-width: 320px;
-            background: rgba(168, 162, 158, 0.6); 
+            background: rgba(255, 255, 255, 0.85); 
             backdrop-filter: blur(20px); 
             -webkit-backdrop-filter: blur(20px);
             border-radius: 28px;
             padding: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
             z-index: 100;
             display: none; 
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.5);
             text-align: center;
             animation: fadeInCenter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes fadeInCenter {
-            from { transform: translate(-50%, -40%); opacity: 0; }
+            from { transform: translate(-50%, -45%); opacity: 0; }
             to { transform: translate(-50%, -50%); opacity: 1; }
         }
     </style>
 </head>
 <body class="h-screen w-screen flex items-center justify-center">
 
-    <!-- 安裝提示框 -->
+    <!-- 安裝提示框 (更新為有趣文案與質感樣式) -->
     <div id="installPrompt">
         <div class="flex flex-col items-center space-y-5">
-            <img src="./icon.png" class="w-20 h-20 rounded-2xl shadow-lg object-cover border border-white/30" alt="App Icon">
-            <div>
-                <h3 class="text-lg font-bold text-white drop-shadow-md">安裝智慧單字卡</h3>
+            <img src="./icon.png" class="w-20 h-20 rounded-2xl shadow-sm object-cover border border-gray-100" alt="App Icon">
+            <div class="space-y-1">
+                <h3 class="text-lg font-bold text-gray-800">隨身攜帶的詞彙庫</h3>
+                <p class="text-xs text-gray-500 leading-relaxed">將「智慧單字卡」加入主畫面<br>讓學習成為一種生活儀式</p>
             </div>
             <div class="flex w-full space-x-3 pt-2">
-                <button onclick="closePrompt()" class="flex-1 text-sm text-white font-medium py-3 rounded-xl border border-white/20 bg-white/5 active:bg-white/10 transition-colors">
-                    稍後
+                <button onclick="closePrompt()" class="flex-1 text-sm text-gray-400 font-medium py-3 rounded-xl hover:bg-gray-50 transition-colors">
+                    下次再說
                 </button>
-                <button id="installBtn" class="flex-1 bg-white text-stone-800 text-sm font-bold py-3 rounded-xl shadow-md active:bg-stone-100 transition-transform active:scale-95">
-                    立即安裝
+                <button id="installBtn" class="flex-1 bg-[#475569] text-white text-sm font-bold py-3 rounded-xl shadow-sm active:bg-[#334155] transition-transform active:scale-95">
+                    立即收藏
                 </button>
             </div>
         </div>
@@ -154,7 +156,6 @@
     </main>
 
     <script>
-        // 檢查環境是否支援 Service Worker
         const isSecureContext = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
 
         if ('serviceWorker' in navigator && isSecureContext) {
@@ -172,9 +173,14 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            setTimeout(() => {
-                installPrompt.style.display = 'block';
-            }, 1000);
+            
+            // 檢查本次會話是否已顯示過
+            if (!sessionStorage.getItem('flashcardInstallShown')) {
+                setTimeout(() => {
+                    installPrompt.style.display = 'block';
+                    sessionStorage.setItem('flashcardInstallShown', 'true');
+                }, 1500);
+            }
         });
 
         installBtn.addEventListener('click', async () => {
