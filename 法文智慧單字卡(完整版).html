@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>法文智慧單字卡</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f5f3ff; touch-action: manipulation; }
+        .card-container { perspective: 1000px; touch-action: none; }
+        .card-inner { transition: transform 0.4s; transform-style: preserve-3d; position: relative; width: 100%; height: 100%; }
+        .no-transition { transition: none !important; }
+        .is-flipped .card-inner { transform: rotateY(180deg); }
+        .card-face { backface-visibility: hidden; position: absolute; inset: 0; border: 2px solid #ddd6fe; border-radius: 1.5rem; background-color: white; }
+        .card-back { transform: rotateY(180deg); }
+        .soft-blue-shadow { box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.1); }
+        .tab-active { border-bottom: 2px solid #8b5cf6; color: #8b5cf6; }
+        .subtab-active { background-color: #8b5cf6; color: white; }
+        .details-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .is-open .details-content { max-height: 200px; }
+        .rotate-icon { transition: transform 0.3s; }
+        .is-open .rotate-icon { transform: rotate(180deg); }
+        .voice-btn-z { z-index: 50; position: relative; }
+        html, body { height: 100%; overflow: hidden; position: fixed; width: 100%; }
+    </style>
+</head>
+<body class="flex flex-col items-center">
+
+    <nav class="w-full max-w-md bg-white shadow-sm sticky top-0 z-50 flex justify-around">
+        <button id="tab-today-btn" class="flex-1 py-4 text-xs font-bold tab-active">今日概覽</button>
+        <button id="tab-learn-btn" class="flex-1 py-4 text-xs font-bold text-gray-400">學習複習</button>
+        <button id="tab-list-btn" class="flex-1 py-4 text-xs font-bold text-gray-400">單字全集</button>
+    </nav>
+
+    <main class="w-full max-w-md px-4 mt-6 h-[calc(100vh-80px)] overflow-y-auto pb-24">
+        <section id="view-today" class="space-y-4">
+            <div class="px-2 flex flex-col space-y-3">
+                <div class="flex bg-violet-50 p-1 rounded-xl">
+                    <button id="subtab-new-btn" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all subtab-active">今日新單字</button>
+                    <button id="subtab-rev-btn" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all text-violet-600">今日複習單字</button>
+                </div>
+            </div>
+            
+            <div id="preview-card" class="card-container relative w-full h-[480px] cursor-pointer">
+                <div id="preview-card-inner" class="card-inner">
+                    <div class="card-face soft-blue-shadow flex flex-col items-center justify-center p-8 text-center">
+                        <span id="preview-tag" class="absolute top-6 left-6 text-xs font-mono font-bold px-2 py-1 rounded uppercase bg-violet-100 text-violet-800">PREVIEW</span>
+                        <div class="absolute top-6 right-6 p-3 text-violet-600 bg-violet-50 rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217z"/></svg>
+                        </div>
+                        <h2 id="preview-word-kr" class="text-4xl md:text-6xl font-bold text-gray-800 mb-2 transition-all"></h2>
+                        <p id="preview-hint" class="absolute bottom-10 text-xs text-violet-400 uppercase font-bold">點擊卡片翻面聽例句</p>
+                    </div>
+                    <div class="card-back card-face soft-blue-shadow flex flex-col p-8">
+                        <div id="preview-back-content">
+                            <div class="text-center mb-6 border-b border-violet-50 pb-6 relative">
+                                <h3 id="preview-word-kr-back" class="text-2xl md:text-3xl font-bold text-gray-700 mb-2"></h3>
+                                <div class="inline-block px-4 py-1 bg-violet-50 rounded-full">
+                                    <p id="preview-word-zh" class="text-lg md:text-xl text-violet-700 font-bold"></p>
+                                </div>
+                                <div class="absolute top-0 right-0">
+                                    <button id="preview-voice-back-word-10" class="voice-btn-z p-3 text-violet-600 bg-violet-50 rounded-full transition-colors flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217z"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="flex-1 flex flex-col justify-center space-y-6">
+                                <div>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <p class="text-xs text-violet-600 font-bold uppercase">法文例句</p>
+                                        <div class="flex space-x-2">
+                                            <button id="preview-voice-ex-10" class="voice-btn-z p-3 text-violet-600 bg-violet-50 rounded-xl hover:bg-violet-100 transition-colors flex items-center space-x-1">
+                                                <span class="text-[10px] font-black">1.0</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217z"/></svg>
+                                            </button>
+                                            <button id="preview-voice-ex-06" class="voice-btn-z p-3 text-violet-600 bg-violet-50 rounded-xl hover:bg-violet-100 transition-colors flex items-center space-x-1 border border-violet-100">
+                                                <span class="text-[10px] font-black">0.6</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217z"/></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p id="preview-ex-kr" class="text-gray-700 text-base md:text-lg font-medium leading-relaxed"></p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-violet-500 font-bold mb-1 uppercase">例句翻譯</p>
+                                    <p id="preview-ex-zh" class="text-gray-500 text-xs md:text-sm"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between space-x-4 mt-4">
+                <button id="preview-prev-btn" class="flex-1 py-4 bg-white text-violet-600 border-2 border-violet-100 rounded-2xl font-bold text-sm shadow-sm active:scale-95 transition-transform">上一個</button>
+                <div class="px-4 text-center">
+                    <p id="preview-progress-text" class="text-sm font-mono text-violet-600 font-bold bg-white px-3 py-2 rounded-xl border border-violet-100 shadow-sm min-w-[60px]"></p>
+                </div>
+                <button id="preview-next-btn" class="flex-1 py-4 bg-violet-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-violet-100 active:scale-95 transition-transform">下一個</button>
+            </div>
+        </section>
+
+        <section id="view-learn" class="hidden">
+            <div class="flex justify-between items-center mb-4 bg-white p-4 rounded-2xl shadow-sm border border-violet-100">
+                <div class="flex-1">
+                    <h2 class="text-sm font-bold text-violet-600 uppercase tracking-widest mb-2">測驗進度</h2>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2 h-2 bg-violet-400 rounded-full"></span>
+                            <span class="text-xs font-bold text-gray-600">待複習: <span id="review-progress">0</span></span>
+                        </div>
+                        <div class="flex items-center space-x-2 border-l border-violet-50 pl-4">
+                            <span class="w-2 h-2 bg-violet-400 rounded-full"></span>
+                            <span class="text-xs font-bold text-gray-600">新單字: <span id="new-progress">0</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="flashcard" class="card-container relative w-full h-[480px] cursor-pointer">
+                <div id="flashcard-inner" class="card-inner">
+                    <div class="card-face soft-blue-shadow flex flex-col items-center justify-center p-8 text-center">
+                        <span id="card-tag" class="absolute top-6 left-6 text-xs font-mono font-bold px-2 py-1 rounded uppercase"></span>
+                        <div class="absolute top-6 right-6">
+                            <button id="learn-voice-btn-10" class="voice-btn-z p-3 text-violet-600 bg-violet-50 rounded-full hover:bg-violet-100 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217z"/></svg>
+                            </button>
+                        </div>
+                        <h2 id="word-kr" class="text-4xl md:text-6xl font-bold text-gray-800 mb-2"></h2>
+                        <p class="absolute bottom-10 text-xs text-violet-400 uppercase font-bold">點擊卡片翻面確認意義</p>
+                    </div>
+                    <div class="card-back card-face soft-blue-shadow flex flex-col p-8 items-center justify-between">
+                        <div class="w-full text-center flex flex-col items-center justify-center flex-1">
+                            <div class="mb-12">
+                                <p id="word-zh" class="text-3xl md:text-4xl px-6 text-violet-800 font-bold"></p>
+                            </div>
+                        </div>
+                        <div class="w-full flex space-x-4 mb-4">
+                            <button id="fail-btn" class="flex-1 py-6 bg-violet-500 text-white rounded-2xl font-black text-3xl shadow-lg shadow-violet-100 active:scale-95 transition-transform">X</button>
+                            <button id="success-btn" class="flex-1 py-6 bg-violet-500 text-white rounded-2xl font-black text-3xl shadow-lg shadow-violet-100 active:scale-95 transition-transform">O</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="limit-reached-ui" class="hidden flex flex-col items-center justify-center h-[400px] text-center p-8 bg-violet-50 rounded-3xl border-2 border-violet-100 border-dashed">
+                <h3 class="text-lg font-bold text-violet-800">今日任務已完成！</h3>
+                <p class="text-sm text-violet-600 mt-2">複習完畢，點擊下方查看進度。</p>
+                <button onclick="document.getElementById('tab-list-btn').click()" class="mt-6 px-6 py-2 bg-violet-500 text-white rounded-full text-sm font-bold">查看單字庫</button>
+            </div>
+        </section>
+
+        <section id="view-list" class="hidden space-y-4">
+            <div class="sticky top-0 z-40 bg-white/95 backdrop-blur-sm p-3 rounded-2xl shadow-sm border border-violet-100 space-y-3">
+                <div class="flex justify-between items-center px-1">
+                    <h2 class="text-lg font-bold text-gray-800">所有單字進度</h2>
+                    <button id="reset-data-btn" class="px-3 py-1 bg-violet-50 text-violet-500 border border-violet-100 rounded-xl text-xs font-bold">重置紀錄</button>
+                </div>
+                <div class="relative">
+                    <input type="text" id="vocab-search" placeholder="搜尋法文或中文..." class="w-full pl-10 pr-4 py-2 bg-violet-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-violet-300 transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-3 top-2.5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
+            </div>
+            <div id="vocab-list-container" class="space-y-3 pb-10"></div>
+            <div id="list-end-trigger" class="h-10"></div>
+        </section>
+    </main>
+
+    <div id="toast" class="fixed bottom-10 bg-violet-900/90 text-white px-6 py-4 rounded-3xl opacity-0 transition-all text-sm z-50 pointer-events-none"></div>
+
+    <script>
+        const DAILY_NEW_LIMIT = 20, DAILY_REVIEW_LIMIT = 5, MULTIPLIER = 2.1, HOUR_MS = 3600000, DAY_MS = 86400000;
+        
+        const initialVocab = [
+            { id: 1, word: "de", meaning: "的", ex_kr: "Deux litres de bière.", ex_zh: "兩公升啤酒。" },
+            { id: 2, word: "je", meaning: "我", ex_kr: "Je suis content.", ex_zh: "我很高興。" },
+            { id: 3, word: "pas", meaning: "不是", ex_kr: "Je ne sais pas.", ex_zh: "我不知道。" },
+            { id: 4, word: "le", meaning: "這", ex_kr: "C'est le weekend.", ex_zh: "今天是周末。" },
+            { id: 5, word: "que", meaning: "那", ex_kr: "Je sais que tu es là.", ex_zh: "我知道你在那裡。" },
+            { id: 6, word: "la", meaning: "那裡", ex_kr: "La télévision est grande.", ex_zh: "電視機很大。" },
+            { id: 7, word: "tu", meaning: "你", ex_kr: "Tu es content?", ex_zh: "你快樂嗎？" },
+            { id: 8, word: "vous", meaning: "你", ex_kr: "Vous êtes charmant.", ex_zh: "你很有魅力。" },
+            { id: 9, word: "un", meaning: "一個", ex_kr: "Je veux un hamburger.", ex_zh: "我想要個漢堡。" },
+            { id: 10, word: "et", meaning: "和", ex_kr: "Les oranges et les bananes sont là.", ex_zh: "橘子和香蕉都來了。" },
+            { id: 11, word: "à", meaning: "有", ex_kr: "Je vais à Paris.", ex_zh: "我要去巴黎。" },
+            { id: 12, word: "il", meaning: "他", ex_kr: "Il est cool.", ex_zh: "他很酷。" },
+            { id: 13, word: "ne", meaning: "出生", ex_kr: "Je ne suis pas rich.", ex_zh: "我並不富有。" },
+            { id: 14, word: "les", meaning: "這", ex_kr: "Les fruits sont verts !", ex_zh: "水果是綠色的！" },
+            { id: 15, word: "en", meaning: "在", ex_kr: "Je travaille en France.", ex_zh: "我在法國工作。" },
+            { id: 16, word: "on", meaning: "在", ex_kr: "On regarde la télévision.", ex_zh: "我們在看電視。" },
+            { id: 17, word: "ça", meaning: "那", ex_kr: "Ça va ?", ex_zh: "你好嗎 ？" },
+            { id: 18, word: "ce", meaning: "這", ex_kr: "Est-ce vous ?", ex_zh: "那是你嗎 ？" },
+            { id: 19, word: "pour", meaning: "為了", ex_kr: "J'ai un cadeau pour toi.", ex_zh: "我為你準備了一份禮物。" },
+            { id: 20, word: "qui", meaning: "誰", ex_kr: "C'est qui ?", ex_zh: "是誰 ？" },
+            { id: 21, word: "mais", meaning: "但", ex_kr: "Je suis rich mais je ne suis pas content.", ex_zh: "我雖然富有，但我並不快樂。" },
+            { id: 22, word: "dans", meaning: "在", ex_kr: "Il est dans le château.", ex_zh: "他在城堡裡。" },
+            { id: 23, word: "nous", meaning: "我們", ex_kr: "Nous sommes raisonable.", ex_zh: "我們通情達理。" },
+            { id: 24, word: "elle", meaning: "她", ex_kr: "Elle est américaine.", ex_zh: "她是美國人。" },
+            { id: 25, word: "bien", meaning: "好的", ex_kr: "Tu danses bien.", ex_zh: "你跳舞跳得很好。" },
+            { id: 26, word: "me", meaning: "我", ex_kr: "Je me vois dans le mirroir.", ex_zh: "我照鏡子時看到了自己。" },
+            { id: 27, word: "si", meaning: "如果", ex_kr: "Je ne sais pas si il est là.", ex_zh: "我不知道他是否在這裡。" },
+            { id: 28, word: "y", meaning: "是", ex_kr: "Paris ? Il y va.", ex_zh: "巴黎？他要去。" },
+            { id: 29, word: "non", meaning: "不", ex_kr: "Est-ce un non ?", ex_zh: "意思是「否」嗎？" },
+            { id: 30, word: "avec", meaning: "和", ex_kr: "Je suis avec vous.", ex_zh: "我與你同在。" },
+            { id: 31, word: "tout", meaning: "全部", ex_kr: "Il est tout à vous.", ex_zh: "一切都是你的了。" },
+            { id: 32, word: "plus", meaning: "更多的", ex_kr: "Je veux plus.", ex_zh: "我還想要更多。" },
+            { id: 33, word: "mon", meaning: "我的", ex_kr: "C'est mon problème.", ex_zh: "這就是我的問題。" },
+            { id: 34, word: "te", meaning: "你", ex_kr: "Je t'aime.", ex_zh: "我愛你。" },
+            { id: 35, word: "moi", meaning: "我", ex_kr: "Est-ce pour moi ?", ex_zh: "這是給我的嗎？" },
+            { id: 36, word: "oui", meaning: "是的", ex_kr: "Oui, c'est moi.", ex_zh: "是的，是我。" },
+            { id: 37, word: "faire", meaning: "待辦事項", ex_kr: "Je veux faire quelque chose.", ex_zh: "我想做點什麼。" },
+            { id: 38, word: "ils", meaning: "他們", ex_kr: "Ils sont grands !", ex_zh: "它們很高！" },
+            { id: 39, word: "sur", meaning: "在", ex_kr: "Elle est sur la table.", ex_zh: "這件事已經提上行程了。" },
+            { id: 40, word: "quoi", meaning: "什麼", ex_kr: "Ça fait quoi ?", ex_zh: "那有什麼作用？" },
+            { id: 41, word: "se", meaning: "塞", ex_kr: "Il se brosse les dents.", ex_zh: "他刷牙。" },
+            { id: 42, word: "comme", meaning: "作為", ex_kr: "C'est comme ça.", ex_zh: "就是這樣。" },
+            { id: 43, word: "être", meaning: "是", ex_kr: "Je veux être libre.", ex_zh: "我渴望自由。" },
+            { id: 44, word: "ici", meaning: "這裡", ex_kr: "Elle est ici.", ex_zh: "她來了。" },
+            { id: 45, word: "lui", meaning: "他", ex_kr: "Elle est tout pour lui.", ex_zh: "她對他來說就是一切。" },
+            { id: 46, word: "votre", meaning: "你的", ex_kr: "C'est votre destin.", ex_zh: "這是你的命運。" },
+            { id: 47, word: "pourquoi", meaning: "為什麼", ex_kr: "Sais-tu pourquoi ?", ex_zh: "你知道為什麼嗎？" },
+            { id: 48, word: "où", meaning: "或者", ex_kr: "Je sais où elle est.", ex_zh: "我知道她在哪裡。" },
+            { id: 49, word: "rien", meaning: "沒有什麼", ex_kr: "Je comprend rien.", ex_zh: "我什麼都聽不懂。" },
+            { id: 50, word: "là", meaning: "那裡", ex_kr: "Je sais que tu es là.", ex_zh: "我知道你在那裡。" },
+            { id: 51, word: "quand", meaning: "什麼時候", ex_kr: "C'est quand, la soirée ?", ex_zh: "派對什麼時候舉辦？" },
+            { id: 52, word: "dire", meaning: "說", ex_kr: "Il m'a dit un truc.", ex_zh: "他跟我說了些什麼。" },
+            { id: 53, word: "son", meaning: "她", ex_kr: "C'est son ami.", ex_zh: "他是他的朋友。" },
+            { id: 54, word: "ton", meaning: "你的", ex_kr: "Je suis ton frère.", ex_zh: "我是你哥哥。" },
+            { id: 55, word: "alors", meaning: "所以", ex_kr: "Alors, ton nouveau voisin, il est comment ?", ex_zh: "你的新鄰居怎麼樣？" },
+            { id: 56, word: "comment", meaning: "如何", ex_kr: "Je sais comment le faire.", ex_zh: "我知道該怎麼做。" },
+            { id: 57, word: "par", meaning: "經過", ex_kr: "Par chance, je suis là.", ex_zh: "幸好我在這裡。" },
+            { id: 58, word: "ou", meaning: "或者", ex_kr: "As-tu dit oui ou non?", ex_zh: "你回答「是」還是「否」？" },
+            { id: 59, word: "chose", meaning: "事物", ex_kr: "La meilleure chose à faire est d'appeler votre mère.", ex_zh: "最好的方法是打電話給你媽媽。" },
+            { id: 60, word: "bon", meaning: "好的", ex_kr: "Le joueur de golf a un bon swing.", ex_zh: "這位高爾夫球手的揮桿動作很好。" },
+            { id: 61, word: "merci", meaning: "謝謝", ex_kr: "J'ai bien aimé le cadeau. Merci beaucoup !", ex_zh: "我非常喜歡這份禮物。非常感謝！" },
+            { id: 62, word: "juste", meaning: "只是", ex_kr: "Ça va être juste.", ex_zh: "一切都會很合適。" },
+            { id: 63, word: "très", meaning: "非常", ex_kr: "Très bien.", ex_zh: "好吧。" },
+            { id: 64, word: "jamais", meaning: "絕不", ex_kr: "C'est maintenant ou jamais.", ex_zh: "機不可失，時不再來。" },
+            { id: 65, word: "avoir", meaning: "擁有", ex_kr: "Je sais ce que vous avez fait.", ex_zh: "我知道你做了什麼。" },
+            { id: 66, word: "vraiment", meaning: "真的", ex_kr: "Tu es vraiment bon.", ex_zh: "你真棒。" },
+            { id: 67, word: "aussi", meaning: "還", ex_kr: "J'ai un frère et une sœur aussi.", ex_zh: "我還有一個弟弟和一個妹妹。" },
+            { id: 68, word: "voir", meaning: "看", ex_kr: "Je peux te voir à 2:30.", ex_zh: "我2點30分可以見到你。" },
+            { id: 69, word: "même", meaning: "甚至", ex_kr: "C'est la même chose.", ex_zh: "是一樣的。" },
+            { id: 70, word: "maintenant", meaning: "現在", ex_kr: "Je suis prêt maintenant.", ex_zh: "我現在準備好了。" },
+            { id: 71, word: "deux", meaning: "二", ex_kr: "J'ai deux chats.", ex_zh: "我養了兩隻貓。" },
+            { id: 72, word: "autre", meaning: "其他", ex_kr: "J'aime l'autre couleur.", ex_zh: "我喜歡另一種顏色。" },
+            { id: 73, word: "peu", meaning: "小的", ex_kr: "J'ai peu d'argent.", ex_zh: "我沒什麼錢。" },
+            { id: 74, word: "quelque", meaning: "一些", ex_kr: "Il a quelques livres à lire.", ex_zh: "他有幾本書要讀。" },
+            { id: 75, word: "temps", meaning: "時間", ex_kr: "Je le fais tout le temps!", ex_zh: "我常常這樣做！" },
+            { id: 76, word: "toujours", meaning: "總是", ex_kr: "Je le fais toujours.", ex_zh: "我一直都是這樣。" },
+            { id: 77, word: "encore", meaning: "再次", ex_kr: "Il est encore ici.", ex_zh: "他還在。" },
+            { id: 78, word: "notre", meaning: "我們的", ex_kr: "On a notre suspect.", ex_zh: "我們鎖定了嫌疑犯。" },
+            { id: 79, word: "besoin", meaning: "需要", ex_kr: "Je vais avoir besoin de toi.", ex_zh: "我需要你。" },
+            { id: 80, word: "falloir", meaning: "需要", ex_kr: "Il faut manger maintenant.", ex_zh: "我們現在需要吃飯了。" },
+            { id: 81, word: "vie", meaning: "生活", ex_kr: "La vie est comme ça.", ex_zh: "這就是人生。" },
+            { id: 82, word: "aller", meaning: "去", ex_kr: "Tu dois y aller.", ex_zh: "你必須走。" },
+            { id: 83, word: "fois", meaning: "時代", ex_kr: "Il est arrivé en retard plusieurs fois.", ex_zh: "他多次遲到。" },
+            { id: 84, word: "sans", meaning: "沒有", ex_kr: "Je bois toujours mon thé sans sucre.", ex_zh: "我喝茶從來不加糖。" },
+            { id: 85, word: "donc", meaning: "所以", ex_kr: "Ma sœur sait coudre, donc elle fait ses propres vêtements.", ex_zh: "我姐姐會縫紉，所以她自己做衣服。" },
+            { id: 86, word: "monde", meaning: "世界", ex_kr: "Je le veux plus que tout au monde.", ex_zh: "我比世界上任何東西都更想要它。" },
+            { id: 87, word: "avant", meaning: "前", ex_kr: "Le joueur était nerveux avant son premier match.", ex_zh: "這名球員在第一場比賽前很緊張。" },
+            { id: 88, word: "sûr", meaning: "在", ex_kr: "Êtes-vous sûr que tout va bien?", ex_zh: "你確定一切都沒問題嗎？" },
+            { id: 89, word: "trop", meaning: "太多", ex_kr: "La robe est trop petite.", ex_zh: "這條裙子太小了。" },
+            { id: 90, word: "parler", meaning: "演講", ex_kr: "Je dois te parler de quelque chose.", ex_zh: "我需要跟你談談這件事。" },
+            { id: 91, word: "père", meaning: "父親", ex_kr: "Tu es mon père.", ex_zh: "你是我的父親。" },
+            { id: 92, word: "après", meaning: "後", ex_kr: "Et après ?", ex_zh: "然後呢？" },
+            { id: 93, word: "dieu", meaning: "上帝", ex_kr: "Je crois en Dieu.", ex_zh: "我信仰上帝。" },
+            { id: 94, word: "homme", meaning: "男人", ex_kr: "Tu es un homme bon.", ex_zh: "你是個好人。" },
+            { id: 95, word: "femme", meaning: "女性", ex_kr: "Je pense que Dieu est une femme.", ex_zh: "我認為上帝是位女性。" },
+            { id: 96, word: "leur", meaning: "他們的", ex_kr: "Je ne leur ai pas dit.", ex_zh: "我沒告訴他們。" },
+            { id: 97, word: "vrai", meaning: "真的", ex_kr: "Et ça a longtemps été vrai.", ex_zh: "這種情況持續了很長時間。" },
+            { id: 98, word: "mal", meaning: "錯誤的", ex_kr: "C’est mal de dire ça.", ex_zh: "這麼說是不對的。" },
+            { id: 99, word: "chez", meaning: "在……的房子", ex_kr: "On est chez nous.", ex_zh: "我們在家。" },
+            { id: 100, word: "depuis", meaning: "自從", ex_kr: "Je n'ai pas fumé depuis 2005.", ex_zh: "我從2005年就沒抽菸了。" },
+            { id: 101, word: "déjà", meaning: "已經", ex_kr: "Tu as déjà fait ça.", ex_zh: "你已經做到了。" },
+            { id: 102, word: "beaucoup", meaning: "很多", ex_kr: "Je bois beaucoup.", ex_zh: "我酒量很大。" },
+            { id: 103, word: "mieux", meaning: "更好的", ex_kr: "Tu peux faire mieux que ça.", ex_zh: "你還可以做得更好。" },
+            { id: 104, word: "mère", meaning: "母親", ex_kr: "Je veux voir ta mère.", ex_zh: "我想見見你母親。" },
+            { id: 105, word: "fille", meaning: "女孩", ex_kr: "C'est juste une petite fille.", ex_zh: "她只是個小女孩。" },
+            { id: 106, word: "gens", meaning: "人們", ex_kr: "Qui sont ces gens?", ex_zh: "這些人是誰？" },
+            { id: 107, word: "quel", meaning: "什麼", ex_kr: "Quel film veux-tu voir ?", ex_zh: "你想看什麼電影？" },
+            { id: 108, word: "désolé", meaning: "對不起", ex_kr: "Désolé pour ça.", ex_zh: "抱歉。" },
+            { id: 109, word: "voilà", meaning: "那裡", ex_kr: "Voilà, c'est exact.", ex_zh: "這是正確的。" },
+            { id: 110, word: "petit", meaning: "小的", ex_kr: "Le monde est petit.", ex_zh: "世界真小。" },
+            { id: 111, word: "maison", meaning: "房子", ex_kr: "Je suis dans la maison.", ex_zh: "我在屋裡。" },
+            { id: 112, word: "soir", meaning: "晚上", ex_kr: "Elle sera là ce soir.", ex_zh: "她今晚會到場。" },
+            { id: 113, word: "cela", meaning: "那", ex_kr: "J’ai pensé à cela hier.", ex_zh: "我昨天也想到了這個問題。" },
+            { id: 114, word: "passé", meaning: "經過", ex_kr: "Nous avons fait quelque chose comme cela dans le passé.", ex_zh: "我們過去也做過類似的事。" },
+            { id: 115, word: "jour", meaning: "天", ex_kr: "Je vais vous en parler un jour.", ex_zh: "以後有機會我會告訴你這件事。" },
+            { id: 116, word: "prendre", meaning: "拿", ex_kr: "Tu peux prendre ce que tu veux.", ex_zh: "你可以拿走任何你想要的東西。" },
+            { id: 117, word: "monsieur", meaning: "先生", ex_kr: "Excusez-moi, monsieur.", ex_zh: "打擾一下，先生。" },
+            { id: 118, word: "savoir", meaning: "知道", ex_kr: "Je veux savoir ce que je peux faire.", ex_zh: "我想知道我能做些什麼。" },
+            { id: 119, word: "argent", meaning: "錢", ex_kr: "Où est votre argent?", ex_zh: "你的錢都去哪了？" },
+            { id: 120, word: "nom", meaning: "姓名", ex_kr: "Quel est votre nom?", ex_zh: "你叫什麼名字？" },
+            { id: 121, word: "nuit", meaning: "夜晚", ex_kr: "Je peux le faire toute la nuit.", ex_zh: "我可以整晚都做。" },
+            { id: 122, word: "bonjour", meaning: "早安", ex_kr: "Bonjour!", ex_zh: "早安!" },
+            { id: 123, word: "raison", meaning: "原因", ex_kr: "Il a raison.", ex_zh: "他說得對。" },
+            { id: 124, word: "moins", meaning: "較少的", ex_kr: "C'est moins cher.", ex_zh: "它更便宜。" },
+            { id: 125, word: "maman", meaning: "媽媽", ex_kr: "Maman a toujours raison.", ex_zh: "媽媽總是對的。" },
+            { id: 126, word: "reste", meaning: "停留", ex_kr: "J'ai passé le reste de la semaine à la plage.", ex_zh: "我把剩下的時間都花在海灘上了。" },
+            { id: 127, word: "seul", meaning: "獨自的", ex_kr: "Je suis son seul héritier.", ex_zh: "我是他的唯一繼承人。" },
+            { id: 128, word: "aider", meaning: "幫助", ex_kr: "Je suis là pour vous aider.", ex_zh: "我來幫你。" },
+            { id: 129, word: "papa", meaning: "爸爸", ex_kr: "Papa est à la maison.", ex_zh: "爸爸回家了。" },
+            { id: 130, word: "entre", meaning: "之間", ex_kr: "Que cela reste entre nous!", ex_zh: "這件事我們兩個保守秘密吧！" },
+            { id: 131, word: "gars", meaning: "夥計們", ex_kr: "Je connais un gars qui travaille dans un restaurant.", ex_zh: "我認識一個在餐廳工作的人。" },
+            { id: 132, word: "fils", meaning: "兒子", ex_kr: "Tu es toujours mon fils.", ex_zh: "你永遠是我的兒子。" },
+            { id: 133, word: "trois", meaning: "三", ex_kr: "Où sont les trois autres?", ex_zh: "其他三個人在哪裡？" },
+            { id: 134, word: "assez", meaning: "足夠的", ex_kr: "Vous en avez eu assez.", ex_zh: "你已經受夠了。" },
+            { id: 135, word: "famille", meaning: "家庭", ex_kr: "Je veux une famille.", ex_zh: "我想要一個家庭。" },
+            { id: 136, word: "trouver", meaning: "尋找", ex_kr: "J'ai trouvé mes clés.", ex_zh: "我找到鑰匙了。" },
+            { id: 137, word: "travail", meaning: "工作", ex_kr: "Je lui ai trouvé un travail.", ex_zh: "我幫他找到了一份工作。" },
+            { id: 138, word: "tête", meaning: "頭", ex_kr: "Tout ça est dans ta tête.", ex_zh: "這一切都只是你的想像。" },
+            { id: 139, word: "voiture", meaning: "車", ex_kr: "Je suis dans la voiture.", ex_zh: "我在車裡。" },
+            { id: 140, word: "vite", meaning: "迅速地", ex_kr: "Marche vite !", ex_zh: "快走！" },
+            { id: 141, word: "partir", meaning: "離開", ex_kr: "Il est temps de partir.", ex_zh: "該走了。" },
+            { id: 142, word: "chance", meaning: "機會", ex_kr: "J'ai de la chance.", ex_zh: "我很幸運。" },
+            { id: 143, word: "pendant", meaning: "期間", ex_kr: "Pendant une semaine", ex_zh: "一週" },
+            { id: 144, word: "idée", meaning: "主意", ex_kr: "Quelle idée !", ex_zh: "真是個好主意！" },
+            { id: 145, word: "part", meaning: "部分", ex_kr: "Vous avez fait votre part.", ex_zh: "你已經盡力了。" },
+            { id: 146, word: "demain", meaning: "明天", ex_kr: "Je vais le voir demain.", ex_zh: "我明天要去見他。" },
+            { id: 147, word: "grand", meaning: "大的", ex_kr: "C'est un grand pays.", ex_zh: "這是一個幅員遼闊的國家。" },
+            { id: 148, word: "ami", meaning: "朋友", ex_kr: "Je suis ici avec un ami.", ex_zh: "我和朋友一起來的。" },
+            { id: 149, word: "venir", meaning: "來", ex_kr: "Je lui ai dit de venir nous voir.", ex_zh: "我叫他過來見我們。" },
+            { id: 150, word: "tard", meaning: "晚的", ex_kr: "Désolé de venir si tard.", ex_zh: "很抱歉我來晚了。" },
+            { id: 151, word: "passer", meaning: "經過", ex_kr: "Il veut passer du temps avec son fils.", ex_zh: "他想多陪陪兒子。" },
+            { id: 152, word: "truc", meaning: "事物", ex_kr: "Où est le truc ?", ex_zh: "訣竅在哪裡？" },
+            { id: 153, word: "tant", meaning: "太多了", ex_kr: "J'ai tant de chose à faire.", ex_zh: "我有很多事情要做。" },
+            { id: 154, word: "sens", meaning: "感覺", ex_kr: "Il a trouvé le sens du mot dans le dictionnaire.", ex_zh: "他在字典裡查到了這個字的意思。" },
+            { id: 155, word: "puis", meaning: "然後", ex_kr: "J'ai mangé trois gâteaux, puis j'en ai mangé un de plus !", ex_zh: "我吃了三個蛋糕，然後又吃了一塊！" },
+            { id: 156, word: "porte", meaning: "門", ex_kr: "Il y a un homme à la porte.", ex_zh: "門口有個男人。" },
+            { id: 157, word: "sortir", meaning: "出去", ex_kr: "Je suis sorti par la porte arrière.", ex_zh: "我從後門離開了。" },
+            { id: 158, word: "heure", meaning: "小時", ex_kr: "Tu as une heure.", ex_zh: "你有一個小時的時間。" },
+            { id: 159, word: "contre", meaning: "反對", ex_kr: "Êtes-vous pour ou contre son idée ?", ex_zh: "你贊成還是反對他的想法？" },
+            { id: 160, word: "coup", meaning: "切", ex_kr: "Le combattant a bloqué le coup avec son bras.", ex_zh: "拳擊手用手臂擋住了這一擊。" },
+            { id: 161, word: "ensemble", meaning: "一起", ex_kr: "Ils sont toujours ensemble.", ex_zh: "他們總是形影不離。" },
+            { id: 162, word: "nouveau", meaning: "新的", ex_kr: "Tout est nouveau.", ex_zh: "一切都是新的。" },
+            { id: 163, word: "amour", meaning: "愛", ex_kr: "Je veux ton amour.", ex_zh: "我想要你的愛。" },
+            { id: 164, word: "sous", meaning: "以下", ex_kr: "Il se trouve sous votre siège.", ex_zh: "它位於你的座位下方。" },
+            { id: 165, word: "cas", meaning: "案件", ex_kr: "Est-ce le cas ?", ex_zh: "真是這樣嗎？" },
+            { id: 166, word: "rester", meaning: "停留", ex_kr: "Restez chez vous si vous êtes malade.", ex_zh: "如果生病了就待在家裡。" },
+            { id: 167, word: "histoire", meaning: "歷史", ex_kr: "Quelle histoire !", ex_zh: "真是個精彩的故事！" },
+            { id: 168, word: "chercher", meaning: "尋找", ex_kr: "J'ai cherché partout, mais je n'ai pas retrouvé mes clés.", ex_zh: "我到處找過了，但就是找不到鑰匙。" },
+            { id: 169, word: "seulement", meaning: "僅有的", ex_kr: "Je veux seulement vous aider.", ex_zh: "我只是想幫你。" },
+            { id: 170, word: "genre", meaning: "性別", ex_kr: "Quel genre de voiture as-tu?", ex_zh: "你開的是什麼車？" },
+            { id: 171, word: "mois", meaning: "月", ex_kr: "Il vient ici une fois par mois.", ex_zh: "他每個月來這裡一次。" },
+            { id: 172, word: "frère", meaning: "兄弟", ex_kr: "Il est plus grand que son frère.", ex_zh: "他比他哥哥高。" },
+            { id: 173, word: "laisser", meaning: "離開", ex_kr: "Ma mère m'a laissé sortir ce soir.", ex_zh: "我媽媽今晚讓我出去。" },
+            { id: 174, word: "car", meaning: "因為", ex_kr: "Je suis le meilleur candidat car je sais ce qu'il faut faire.", ex_zh: "我是最合適的候選人，因為我知道需要做什麼。" },
+            { id: 175, word: "mettre", meaning: "放", ex_kr: "Le garçon a mis un beau vase sur la table.", ex_zh: "男孩把一個漂亮的花瓶放在桌上。" },
+            { id: 176, word: "aucun", meaning: "沒有任何", ex_kr: "Aucune des tribus ne parle la même langue.", ex_zh: "這些部落之間沒有一個說著同一種語言。" },
+            { id: 177, word: "ville", meaning: "城市", ex_kr: "Nous sommes en ville.", ex_zh: "我們到城裡了。" },
+            { id: 178, word: "chaque", meaning: "每個", ex_kr: "Je viens ici chaque jour.", ex_zh: "我每天都來這裡。" },
+            { id: 179, word: "bébé", meaning: "嬰兒", ex_kr: "Mon petit-fils est encore un bébé.", ex_zh: "我的孫子還是個嬰兒。" },
+            { id: 180, word: "longtemps", meaning: "很久", ex_kr: "Le couple avait été ensemble depuis longtemps avant de se marier.", ex_zh: "這對情侶在結婚前已經交往很久了。" },
+            { id: 181, word: "ni", meaning: "兩者都不", ex_kr: "Je n'aime ni les pommes ni les raisins.", ex_zh: "我不喜歡蘋果和葡萄。" },
+            { id: 182, word: "voici", meaning: "這裡是", ex_kr: "Voici un résumé de la réunion de la semaine dernière.", ex_zh: "以下是上週會議的總結。" },
+            { id: 183, word: "donner", meaning: "給", ex_kr: "Je vais te donner une chance de plus.", ex_zh: "我再給你一次機會。" },
+            { id: 184, word: "type", meaning: "種類", ex_kr: "Son frère est un type sympathique.", ex_zh: "他哥哥是個好人。" },
+            { id: 185, word: "corps", meaning: "身體", ex_kr: "Le corps a des défenses naturelles contre les virus.", ex_zh: "人體本身俱有抵抗病毒的天然防禦機制。" },
+            { id: 186, word: "endroit", meaning: "地方", ex_kr: "Je suis dans un endroit calme.", ex_zh: "我身處一個安靜的地方。" },
+            { id: 187, word: "façon", meaning: "方式", ex_kr: "Laisse-moi le faire à ma façon.", ex_zh: "讓我按我的方式來。" },
+            { id: 188, word: "dont", meaning: "其中", ex_kr: "Le noir est la seule chose dont j'ai peur.", ex_zh: "我唯一害怕的就是黑暗。" },
+            { id: 189, word: "premier", meaning: "第一的", ex_kr: "Elle est mon premier amour.", ex_zh: "她是我初戀。" },
+            { id: 190, word: "main", meaning: "手", ex_kr: "Je peux le faire avec une main.", ex_zh: "我一隻手就能做。" },
+            { id: 191, word: "côté", meaning: "邊", ex_kr: "Les deux côtés de la feuille de papier sont blancs.", ex_zh: "這張紙的兩面都是白色的。" },
+            { id: 192, word: "pouvoir", meaning: "力量", ex_kr: "Tu peux finir ce projet.", ex_zh: "你可以完成這個專案。" },
+            { id: 193, word: "vieux", meaning: "老的", ex_kr: "Le vieux château a été construit sur une colline.", ex_zh: "這座古老的城堡建在山頂上。" },
+            { id: 194, word: "matin", meaning: "早晨", ex_kr: "Elle était là ce matin.", ex_zh: "她今天早上在那裡。" },
+            { id: 195, word: "tellement", meaning: "這樣的", ex_kr: "Il y a tellement de choses que je veux te dire.", ex_zh: "我有很多話想跟你說。" },
+            { id: 196, word: "enfant", meaning: "孩子", ex_kr: "Vous êtes une enfant.", ex_zh: "你還是個孩子。" },
+            { id: 197, word: "pardon", meaning: "赦免", ex_kr: "Pardon ? Je n'ai pas entendu la question.", ex_zh: "你說什麼？我沒聽清楚問題。" },
+            { id: 198, word: "devant", meaning: "在前", ex_kr: "Regarde devant toi.", ex_zh: "展望。" },
+            { id: 199, word: "devoir", meaning: "責任", ex_kr: "Elle doit étudier pour réussir ses examens.", ex_zh: "她需要努力學習才能通過考試。" },
+            { id: 200, word: "vers", meaning: "向", ex_kr: "L'avion a entamé sa descente vers l'aéroport.", ex_zh: "飛機開始向機場下降。" },
+            { id: 201, word: "chambre", meaning: "臥室", ex_kr: "Mon père est dans sa chambre.", ex_zh: "我父親在他的房間裡。" },
+            { id: 202, word: "droit", meaning: "正確的", ex_kr: "Tu as le droit de savoir.", ex_zh: "你有權利知道。" },
+            { id: 203, word: "mari", meaning: "丈夫", ex_kr: "Il sera un très bon mari pour elle.", ex_zh: "他會是她非常好的丈夫。" },
+            { id: 204, word: "enfin", meaning: "最後", ex_kr: "Il a enfin décidé d'arrêter de fumer.", ex_zh: "他終於決定戒菸了。" },
+            { id: 205, word: "eau", meaning: "水", ex_kr: "Mon ami avait soif et a demandé un verre d'eau.", ex_zh: "我的朋友口渴了，要了一杯水。" },
+            { id: 206, word: "nouvelle", meaning: "新的", ex_kr: "Nous avons une bonne nouvelle.", ex_zh: "我們有好消息。" },
+            { id: 207, word: "boulot", meaning: "工作", ex_kr: "Ils ont fait du bon boulot.", ex_zh: "他們做得很好。" },
+            { id: 208, word: "arrêter", meaning: "停止", ex_kr: "Les freins servent à arrêter un véhicule en mouvement.", ex_zh: "煞車用於使行駛中的車輛停止。" },
+            { id: 209, word: "terre", meaning: "地球", ex_kr: "La Chine est le pays le plus peuplé de la terre.", ex_zh: "中國是世界上人口最多的國家。" },
+            { id: 210, word: "loin", meaning: "遠的", ex_kr: "Il est loin de chez lui.", ex_zh: "他離家很遠。" },
+            { id: 211, word: "fin", meaning: "結尾", ex_kr: "À la fin, elle a eu une bonne idée.", ex_zh: "最後，她想出了一個好主意。" },
+            { id: 212, word: "croire", meaning: "相信", ex_kr: "Je sais que tu me crois.", ex_zh: "我知道你相信我。" },
+            { id: 213, word: "gros", meaning: "胖的", ex_kr: "Un gros corbeau noir est perché sur la branche.", ex_zh: "一隻體型較大的黑烏鴉棲息在樹枝上。" },
+            { id: 214, word: "plutôt", meaning: "反而", ex_kr: "Je pourrais prendre le bus, mais je vais plutôt marcher.", ex_zh: "我可以坐公車，但我更喜歡走路。" },
+            { id: 215, word: "jouer", meaning: "玩", ex_kr: "J'aime jouer au golf pour me détendre.", ex_zh: "我喜歡打高爾夫球放鬆身心。" },
+            { id: 216, word: "bureau", meaning: "桌子", ex_kr: "Viens à mon bureau.", ex_zh: "請到我辦公室來。" },
+            { id: 217, word: "hier", meaning: "昨天", ex_kr: "Nous avons fait ça hier.", ex_zh: "我們昨天就做了。" },
+            { id: 218, word: "prêt", meaning: "準備好", ex_kr: "Il vous faut être prêt à tout.", ex_zh: "你必須做好應對任何情況的準備。" },
+            { id: 219, word: "celui", meaning: "那個", ex_kr: "J’ai acheté deux cafés ; celui-ci est décaféiné.", ex_zh: "我買了兩種咖啡；這種是無咖啡因的。" },
+            { id: 220, word: "demander", meaning: "問", ex_kr: "Le juge a demandé au témoin de parler.", ex_zh: "法官要求證人作證。" },
+            { id: 221, word: "jeune", meaning: "年輕的", ex_kr: "Ta mère est très jeune.", ex_zh: "你媽媽很年輕。" },
+            { id: 222, word: "dehors", meaning: "出去", ex_kr: "Ils sont dehors.", ex_zh: "他們在外面。" },
+            { id: 223, word: "école", meaning: "學校", ex_kr: "J'enseigne l'anglais dans une petite école.", ex_zh: "我在一所小型學校教英文。" },
+            { id: 224, word: "beau", meaning: "美麗的", ex_kr: "Tu as un nom si beau.", ex_zh: "你的名字真好聽。" },
+            { id: 225, word: "appeler", meaning: "打電話", ex_kr: "Appelez la police.", ex_zh: "打電話叫警察。" },
+            { id: 226, word: "semaine", meaning: "星期", ex_kr: "Tu as eu une semaine pour faire ça.", ex_zh: "你有一周的時間來完成這件事。" },
+            { id: 227, word: "vérité", meaning: "真相", ex_kr: "En vérité, vous avez raison.", ex_zh: "事實上，你是對的。" },
+            { id: 228, word: "chef", meaning: "首席", ex_kr: "Vous êtes le chef.", ex_zh: "你是老闆。" },
+            { id: 229, word: "confiance", meaning: "相信", ex_kr: "On peut me faire confiance.", ex_zh: "你可以相信我。" },
+            { id: 230, word: "feu", meaning: "火", ex_kr: "Votre voiture est en feu.", ex_zh: "你的車著火了。" },
+            { id: 231, word: "vivre", meaning: "居住", ex_kr: "Je vis dans une grande ville.", ex_zh: "我住在一個大城市。" },
+            { id: 232, word: "journée", meaning: "白天", ex_kr: "Je peux le faire toute la journée.", ex_zh: "我可以一整天都做這件事。" },
+            { id: 233, word: "près", meaning: "關閉", ex_kr: "Reste près.", ex_zh: "保持距離。" },
+            { id: 234, word: "meilleur", meaning: "最好的", ex_kr: "Tu es le meilleur pour ce travail.", ex_zh: "你是這份工作的最佳人選。" },
+            { id: 235, word: "dessus", meaning: "多於", ex_kr: "Voici la table - mettez la valise dessus.", ex_zh: "桌子在這裡——把行李箱放在上面。" },
+            { id: 236, word: "dur", meaning: "難的", ex_kr: "Ça doit être dur à faire.", ex_zh: "那肯定很難做到。" },
+            { id: 237, word: "manger", meaning: "吃", ex_kr: "Allons prendre quelque chose à manger !", ex_zh: "咱們去吃點東西吧！" },
+            { id: 238, word: "garçon", meaning: "男生", ex_kr: "Tu es un bon garçon.", ex_zh: "你是個好孩子。" },
+            { id: 239, word: "équipe", meaning: "團隊", ex_kr: "Voilà mon équipe.", ex_zh: "這是我的團隊。" },
+            { id: 240, word: "arriver", meaning: "到達", ex_kr: "Je suis sûr que nous arriverons à l'heure.", ex_zh: "我相信我們一定能準時到達。" },
+            { id: 241, word: "guerre", meaning: "戰爭", ex_kr: "Je suis contre la guerre.", ex_zh: "我反對戰爭。" },
+            { id: 242, word: "derrière", meaning: "在後面", ex_kr: "Il est juste derrière toi.", ex_zh: "他就在你身後。" },
+            { id: 243, word: "plein", meaning: "滿的", ex_kr: "Le ballon flotte parce qu'il est plein d'hélium.", ex_zh: "氣球之所以會漂浮，是因為它充滿了氦氣。" },
+            { id: 244, word: "fort", meaning: "強的", ex_kr: "Vous êtes très fort.", ex_zh: "你很堅強。" },
+            { id: 245, word: "exactement", meaning: "確切地", ex_kr: "Je sais exactement ce que je vais faire.", ex_zh: "我知道自己要做什麼。" },
+            { id: 246, word: "presque", meaning: "幾乎", ex_kr: "Mon travail est presque fini.", ex_zh: "我的工作快完成了。" },
+            { id: 247, word: "dernier", meaning: "最後的", ex_kr: "Le dernier est le meilleur.", ex_zh: "最後一個最好。" },
+            { id: 248, word: "fou", meaning: "瘋狂的", ex_kr: "Il est fou.", ex_zh: "他瘋了。" },
+            { id: 249, word: "fête", meaning: "派對", ex_kr: "Tu dois aller à la fête.", ex_zh: "你必須去參加聚會。" },
+            { id: 250, word: "tomber", meaning: "落下", ex_kr: "Laisse la pluie tomber sur nous.", ex_zh: "讓雨水落在我們身上吧。" },
+            { id: 251, word: "attendre", meaning: "等待", ex_kr: "j'ai dû attendre mon ami.", ex_zh: "我得等我的朋友。" },
+            { id: 252, word: "jeu", meaning: "遊戲", ex_kr: "Le jeu est simple et facile à apprendre.", ex_zh: "這款遊戲簡單易學。" },
+            { id: 253, word: "génial", meaning: "驚人的", ex_kr: "Il est génial.", ex_zh: "他很棒。" },
+            { id: 254, word: "envie", meaning: "嫉妒", ex_kr: "Ma plus grande envie serait de voyager en Australie.", ex_zh: "我最大的願望就是去澳洲旅行。" },
+            { id: 255, word: "pays", meaning: "國家", ex_kr: "Quel pays !", ex_zh: "多麼棒的國家啊！" },
+            { id: 256, word: "cours", meaning: "課程", ex_kr: "Je veux vous parler après le cours.", ex_zh: "我想課後和你談談。" },
+            { id: 257, word: "numéro", meaning: "數位", ex_kr: "Prends un numéro !", ex_zh: "請取號碼！" },
+            { id: 258, word: "bientôt", meaning: "很快", ex_kr: "Il sera bientôt là.", ex_zh: "他很快就會到。" },
+            { id: 259, word: "cinq", meaning: "五", ex_kr: "Je la connais depuis cinq ans.", ex_zh: "我認識她五年了。" },
+            { id: 260, word: "parfait", meaning: "完美的", ex_kr: "Cet endroit est parfait.", ex_zh: "這裡簡直完美。" },
+            { id: 261, word: "ainsi", meaning: "因此", ex_kr: "Il doit en être ainsi.", ex_zh: "必須如此。" },
+            { id: 262, word: "autant", meaning: "如此之多", ex_kr: "Je bois autant d’eau que jamais.", ex_zh: "我喝的水量和以往一樣多。" },
+            { id: 263, word: "retour", meaning: "後退", ex_kr: "Est-ce la raison de ton retour ?", ex_zh: "這就是你回來的原因嗎？" },
+            { id: 264, word: "peine", meaning: "懲罰", ex_kr: "se donner de la peine pour faire quelque chose", ex_zh: "努力去做某事" },
+            { id: 265, word: "mauvais", meaning: "壞的", ex_kr: "Ne sois pas un mauvais garçon.", ex_zh: "別做壞孩子。" },
+            { id: 266, word: "penser", meaning: "思考", ex_kr: "Il vous faut penser à votre famille.", ex_zh: "你需要考慮一下你的家人。" },
+            { id: 267, word: "mot", meaning: "單字", ex_kr: "Il veut toujours avoir le dernier mot.", ex_zh: "他總是想說最後一句話。" },
+            { id: 268, word: "quatre", meaning: "四", ex_kr: "Nous sommes une famille de quatre.", ex_zh: "我們一家四口。" },
+            { id: 269, word: "essayer", meaning: "嘗試", ex_kr: "Essaie de te mettre à la place de ta mère.", ex_zh: "試著站在母親的角度思考問題。" },
+            { id: 270, word: "rentrer", meaning: "返回", ex_kr: "Rentrez dans la maison.", ex_zh: "進屋。" },
+            { id: 271, word: "travailler", meaning: "工作", ex_kr: "Je travaille dans un cabinet d'avocats.", ex_zh: "我在一家律師事務所工作。" },
+            { id: 272, word: "regarder", meaning: "看", ex_kr: "Je voulais juste te regarder.", ex_zh: "我只是想看看你。" },
+            { id: 273, word: "parfois", meaning: "有時", ex_kr: "Ça arrive parfois.", ex_zh: "這種情況偶爾會發生。" },
+            { id: 274, word: "faute", meaning: "錯誤", ex_kr: "Le texte était plein de fautes d'orthographe.", ex_zh: "這篇文章拼字錯誤很多。" },
+            { id: 275, word: "choix", meaning: "選擇", ex_kr: "Faites un autre choix.", ex_zh: "另作選擇。" },
+            { id: 276, word: "bas", meaning: "向下", ex_kr: "Le soir, le soleil est bas.", ex_zh: "傍晚時分，太陽低垂。" },
+            { id: 277, word: "heureux", meaning: "快樂的", ex_kr: "Je suis très heureux de te revoir.", ex_zh: "很高興再次見到你。" },
+            { id: 278, word: "facile", meaning: "簡單的", ex_kr: "Ça va être facile.", ex_zh: "這很容易。" },
+            { id: 279, word: "entendre", meaning: "聽到", ex_kr: "Je veux vous entendre le dire.", ex_zh: "我想聽你親口說出來。" },
+            { id: 280, word: "lit", meaning: "床", ex_kr: "Il doit rester au lit.", ex_zh: "他需要臥床休息。" },
+            { id: 281, word: "entrer", meaning: "進入", ex_kr: "Il est entré et a immédiatement demandé un verre d'eau.", ex_zh: "他進來後立刻要了一杯水。" },
+            { id: 282, word: "plaisir", meaning: "樂趣", ex_kr: "Quel plaisir !", ex_zh: "真是太好了！" },
+            { id: 283, word: "ensuite", meaning: "下一個", ex_kr: "Que devrais-je faire ensuite?", ex_zh: "接下來我該怎麼做？" },
+            { id: 284, word: "propre", meaning: "自己的", ex_kr: "Chaque pays a sa propre culture.", ex_zh: "每個國家都有自己的文化。" },
+            { id: 285, word: "route", meaning: "路", ex_kr: "Il est en route.", ex_zh: "它正在運送途中。" },
+            { id: 286, word: "tour", meaning: "圓形的", ex_kr: "Je suis allé faire un tour dans le parc.", ex_zh: "我去公園散步了。" },
+            { id: 287, word: "garder", meaning: "保持", ex_kr: "Je vais le garder avec moi.", ex_zh: "我會把它帶在身邊。" },
+            { id: 288, word: "année", meaning: "年", ex_kr: "Il y a douze mois et 365 jours dans une année.", ex_zh: "一年有十二個月，共365天。" },
+            { id: 289, word: "drôle", meaning: "有趣的", ex_kr: "Tu es très drôle.", ex_zh: "你真幽默。" },
+            { id: 290, word: "rendre", meaning: "回饋社會", ex_kr: "Je lui ai rendu les clés.", ex_zh: "我把鑰匙還給了他。" },
+            { id: 291, word: "lieu", meaning: "地方", ex_kr: "Vous êtes en lieu sûr.", ex_zh: "你現在身處安全之地。" },
+            { id: 292, word: "sujet", meaning: "主題", ex_kr: "Je connais bien le sujet.", ex_zh: "我對這個主題很了解。" },
+            { id: 293, word: "difficile", meaning: "難的", ex_kr: "Cela doit être si difficile pour vous.", ex_zh: "這對你來說一定很難。" },
+            { id: 294, word: "pire", meaning: "更糟", ex_kr: "Mes résultats scolaires sont pires.", ex_zh: "我的學業成績更差了。" },
+            { id: 295, word: "sorte", meaning: "種類", ex_kr: "Dans certaines cultures, un baiser est une sorte de salutation.", ex_zh: "在某些文化中，親吻是一種問候方式。" },
+            { id: 296, word: "ceci", meaning: "這", ex_kr: "Ceci est pour mon ami.", ex_zh: "這是給我朋友的。" },
+            { id: 297, word: "état", meaning: "狀態", ex_kr: "La table est vieille mais elle est en bon état.", ex_zh: "桌子雖然舊了，但保存完好。" },
+            { id: 298, word: "chien", meaning: "狗", ex_kr: "Ce chien est à moi.", ex_zh: "這條狗是我的。" },
+            { id: 299, word: "perdre", meaning: "失去", ex_kr: "Ma fille vient de perdre sa première dent.", ex_zh: "我女兒剛掉了第一顆牙。" },
+            { id: 300, word: "tôt", meaning: "早期的", ex_kr: "Désolé de vous appeler si tôt.", ex_zh: "很抱歉這麼早就打電話給您。" },
+            { id: 301, word: "dès", meaning: "的", ex_kr: "Dès que j’arrive à la maison, je me fais couler un bain.", ex_zh: "我一到家就給自己放洗澡水。" },
+            { id: 302, word: "café", meaning: "咖啡", ex_kr: "Merci pour le café.", ex_zh: "謝謝你的咖啡。" },
+            { id: 303, word: "verre", meaning: "玻璃", ex_kr: "Elle a versé du lait dans le verre.", ex_zh: "她把牛奶倒進玻璃杯裡。" },
+            { id: 304, word: "ferme", meaning: "農場", ex_kr: "Je travaille dans une ferme.", ex_zh: "我在農場工作。" },
+            { id: 305, word: "d'accord", meaning: "好的", ex_kr: "D'accord ! Je viendrai à la fête demain.", ex_zh: "好的！我明天會來參加聚會。" },
+            { id: 306, word: "sûrement", meaning: "當然", ex_kr: "Mon professeur connaît sûrement la réponse.", ex_zh: "我的老師可能知道答案。" },
+            { id: 307, word: "montrer", meaning: "表示", ex_kr: "Je vais te montrer la ville.", ex_zh: "我將帶你遊覽這座城市。" },
+            { id: 308, word: "cœur", meaning: "心", ex_kr: "Je le connais par cœur.", ex_zh: "我熟記於心。" },
+            { id: 309, word: "avis", meaning: "注意", ex_kr: "À mon avis, il a raison.", ex_zh: "我認為他是對的。" },
+            { id: 310, word: "sauf", meaning: "除了", ex_kr: "Personne ne peut le faire sauf toi.", ex_zh: "除了你，沒人能做到。" },
+            { id: 311, word: "doute", meaning: "懷疑", ex_kr: "Ils sont heureux, sans aucun doute.", ex_zh: "他們很開心，這點毋庸置疑。" },
+            { id: 312, word: "seconde", meaning: "第二", ex_kr: "Donne-moi une seconde !", ex_zh: "稍等片刻！" },
+            { id: 313, word: "sérieux", meaning: "嚴肅的", ex_kr: "Maintenant je suis sérieux.", ex_zh: "我現在是認真的。" },
+            { id: 314, word: "gentil", meaning: "種類", ex_kr: "Mon père est très gentil.", ex_zh: "我父親非常和藹。" },
+            { id: 315, word: "haut", meaning: "高的", ex_kr: "Ma maison est en haut de la route.", ex_zh: "我家在路的盡頭。" },
+            { id: 316, word: "malade", meaning: "生病的", ex_kr: "Mon fils était malade hier.", ex_zh: "我兒子昨天生病了。" },
+            { id: 317, word: "esprit", meaning: "精神", ex_kr: "Il a un esprit génial !", ex_zh: "他才思敏捷！" },
+            { id: 318, word: "moyen", meaning: "平均的", ex_kr: "Donne-moi un autre moyen.", ex_zh: "給我另一種方法。" },
+            { id: 319, word: "six", meaning: "六", ex_kr: "Il est déjà six heures.", ex_zh: "已經六點了。" },
+            { id: 320, word: "salle", meaning: "房間", ex_kr: "Tous les sièges de la salle étaient occupés.", ex_zh: "大廳裡的所有座位都坐滿了人。" },
+            { id: 321, word: "comprendre", meaning: "理解", ex_kr: "Des instructions simples sont faciles à comprendre.", ex_zh: "簡單的說明很容易理解。" },
+            { id: 322, word: "sauver", meaning: "節省", ex_kr: "Je suis venu ici pour te sauver.", ex_zh: "我來這裡是為了救你。" },
+            { id: 323, word: "bras", meaning: "手臂", ex_kr: "Regarde mon bras.", ex_zh: "看看我的手臂。" },
+            { id: 324, word: "chéri", meaning: "親愛的", ex_kr: "Chérie, je suis de retour.", ex_zh: "親愛的，我回來了。" },
+            { id: 325, word: "partout", meaning: "到處", ex_kr: "Nos gens sont partout.", ex_zh: "我們的人民遍布各地。" },
+            { id: 326, word: "visage", meaning: "臉", ex_kr: "Je connais ton visage.", ex_zh: "我認得你的臉。" },
+            { id: 327, word: "chemin", meaning: "小路", ex_kr: "Allons par ce chemin.", ex_zh: "我們走這邊吧。" },
+            { id: 328, word: "soirée", meaning: "晚上", ex_kr: "Nous avons passé une soirée sympa au restaurant.", ex_zh: "我們在餐廳度過了一個愉快的夜晚。" },
+            { id: 329, word: "livre", meaning: "書", ex_kr: "Je lui ai donné un livre.", ex_zh: "我送了他一本書。" },
+            { id: 330, word: "boire", meaning: "喝", ex_kr: "Je veux quelque chose à boire.", ex_zh: "我想喝點東西。" },
+            { id: 331, word: "surtout", meaning: "首先", ex_kr: "L'équipe doit surtout rester unie.", ex_zh: "團隊最重要的就是保持團結。" },
+            { id: 332, word: "bois", meaning: "喝", ex_kr: "Ma maison est en bois.", ex_zh: "我的房子是木製的。" },
+            { id: 333, word: "rapport", meaning: "報告", ex_kr: "Je veux vous parler à propos de ce rapport.", ex_zh: "我想和你談談這份報告。" },
+            { id: 334, word: "pauvre", meaning: "貧窮的", ex_kr: "Je fais du bénévolat pour aider les familles pauvres.", ex_zh: "我做義工幫助貧困家庭。" },
+            { id: 335, word: "sinon", meaning: "否則", ex_kr: "Fais-le, sinon tu ne peux pas sortir ce soir.", ex_zh: "去做吧，不然你今晚就出不了門了。" },
+            { id: 336, word: "rencontrer", meaning: "見面", ex_kr: "Il a voulu te rencontrer.", ex_zh: "他想見你。" },
+            { id: 337, word: "an", meaning: "年", ex_kr: "Je suis là depuis un an.", ex_zh: "我在這裡已經一年了。" },
+            { id: 338, word: "devenir", meaning: "變得", ex_kr: "Le garçon veut devenir pompier.", ex_zh: "這個男孩想成為消防員。" },
+            { id: 339, word: "souvent", meaning: "常", ex_kr: "Je ne viens pas souvent ici.", ex_zh: "我不常來這裡。" },
+            { id: 340, word: "revenir", meaning: "回來", ex_kr: "Il est revenu à la maison après des années à l'étranger.", ex_zh: "他在國外生活多年後回到了家鄉。" },
+            { id: 341, word: "pièce", meaning: "片", ex_kr: "Ils sont tous deux dans la pièce.", ex_zh: "他們兩個都在房間裡。" },
+            { id: 342, word: "dormir", meaning: "睡覺", ex_kr: "Je me sens bien car j'ai bien dormi.", ex_zh: "我睡得很好，所以感覺很好。" },
+            { id: 343, word: "grave", meaning: "嚴重", ex_kr: "La situation est grave.", ex_zh: "情況十分嚴峻。" },
+            { id: 344, word: "commencer", meaning: "開始", ex_kr: "Ne commence pas à faire ça.", ex_zh: "別那樣做。" },
+            { id: 345, word: "roi", meaning: "國王", ex_kr: "À bas le roi !", ex_zh: "打倒國王！" },
+            { id: 346, word: "carte", meaning: "地圖", ex_kr: "Le professeur a montré le pays sur la carte.", ex_zh: "教授指著地圖上的那個國家。" },
+            { id: 347, word: "paraître", meaning: "出現", ex_kr: "La tâche paraissait insurmontable mais j'ai persévéré.", ex_zh: "這項任務看似無法完成，但我堅持了下來。" },
+            { id: 348, word: "rêve", meaning: "夢", ex_kr: "Ça doit être un rêve.", ex_zh: "這一定是夢。" },
+            { id: 349, word: "bonsoir", meaning: "晚安", ex_kr: "Bonsoir ! Nous avons une réservation pour deux.", ex_zh: "晚安!我們預訂了兩人位。" },
+            { id: 350, word: "faux", meaning: "偽造的", ex_kr: "La police a signalé que le passeport était un faux.", ex_zh: "警方報告稱，該護照是偽造的。" },
+            { id: 351, word: "peur", meaning: "害怕", ex_kr: "J'ai peur de faire une erreur.", ex_zh: "我害怕犯錯。" },
+            { id: 352, word: "sac", meaning: "包包", ex_kr: "Il me faut un sac.", ex_zh: "我需要一個包。" },
+            { id: 353, word: "content", meaning: "激動不已", ex_kr: "Je suis content de te voir ici.", ex_zh: "很高興在這裡見到你。" },
+            { id: 354, word: "cher", meaning: "親愛的", ex_kr: "Ma mère a acheté une bague très chère.", ex_zh: "我媽媽買了一枚非常昂貴的戒指。" },
+            { id: 355, word: "acheter", meaning: "買", ex_kr: "Je veux en acheter un autre.", ex_zh: "我想再買一個。" },
+            { id: 356, word: "début", meaning: "開始", ex_kr: "Ça serait un bon début.", ex_zh: "那將會是一個好的開始。" },
+            { id: 357, word: "maître", meaning: "掌握", ex_kr: "Vous êtes le maître.", ex_zh: "你是大師。" },
+            { id: 358, word: "patron", meaning: "老闆", ex_kr: "Tu es mon patron.", ex_zh: "你是我的老闆。" },
+            { id: 359, word: "noël", meaning: "聖誕節", ex_kr: "Noël arrive bientôt.", ex_zh: "聖誕節快到了。" },
+            { id: 360, word: "rue", meaning: "街道", ex_kr: "Ne joue pas dans la rue.", ex_zh: "不要在街上玩耍。" },
+            { id: 361, word: "prix", meaning: "價格", ex_kr: "Ne pense pas au prix.", ex_zh: "不要考慮價格。" },
+            { id: 362, word: "gagner", meaning: "賺", ex_kr: "Pensez-vous que nous avons une chance de gagner?", ex_zh: "你認為我們有獲勝的可能性嗎？" },
+            { id: 363, word: "effet", meaning: "影響", ex_kr: "Ce médicament a plusieurs effets secondaires.", ex_zh: "這種藥物有多種副作用。" },
+            { id: 364, word: "tirer", meaning: "拉", ex_kr: "Il faut tirer la porte pour l'ouvrir.", ex_zh: "你必須拉動門才能打開它。" },
+            { id: 365, word: "avocat", meaning: "律師", ex_kr: "Je veux parler à un avocat.", ex_zh: "我想見律師。" },
+            { id: 366, word: "voix", meaning: "嗓音", ex_kr: "Sa voix est très belle.", ex_zh: "她的聲音非常動聽。" },
+            { id: 367, word: "noir", meaning: "黑色的", ex_kr: "La photo a été imprimée en noir et blanc.", ex_zh: "照片是黑白列印的。" },
+            { id: 368, word: "apprendre", meaning: "學習", ex_kr: "Je suis venu ici pour apprendre.", ex_zh: "我來這裡是為了學習。" },
+            { id: 369, word: "dix", meaning: "十", ex_kr: "Le film commence à dix heures.", ex_zh: "電影十點開始。" },
+            { id: 370, word: "probablement", meaning: "大概", ex_kr: "Tu savais probablement déjà ça.", ex_zh: "你可能早就知道了。" },
+            { id: 371, word: "bout", meaning: "結尾", ex_kr: "La salle de bain est au bout du couloir.", ex_zh: "浴室在走廊盡頭。" },
+            { id: 372, word: "ordre", meaning: "命令", ex_kr: "Mets ta chambre en ordre.", ex_zh: "整理你的房間。" },
+            { id: 373, word: "incroyable", meaning: "驚人的", ex_kr: "Tu es vraiment incroyable.", ex_zh: "你真是太棒了。" },
+            { id: 374, word: "retrouver", meaning: "尋找", ex_kr: "Il a enfin retrouvé ses clés perdues.", ex_zh: "他終於找到了丟失的鑰匙。" },
+            { id: 375, word: "bienvenue", meaning: "歡迎", ex_kr: "Bienvenue ! Bon séjour parmi nous !", ex_zh: "歡迎光臨！祝您入住愉快！" },
+            { id: 376, word: "force", meaning: "力量", ex_kr: "Il a plus de force que moi.", ex_zh: "他比我強壯。" },
+            { id: 377, word: "ailleurs", meaning: "別處", ex_kr: "Regardez ailleurs.", ex_zh: "另尋他處吧。" },
+            { id: 378, word: "protéger", meaning: "保護", ex_kr: "On va te protéger.", ex_zh: "我們會保護你。" },
+            { id: 379, word: "utiliser", meaning: "使用", ex_kr: "Je sais comment utiliser ça.", ex_zh: "我知道怎麼用它。" },
+            { id: 380, word: "sœur", meaning: "姊姊", ex_kr: "Ta sœur est toujours aussi belle.", ex_zh: "你妹妹還是那麼漂亮。" },
+            { id: 381, word: "complètement", meaning: "完全地", ex_kr: "Il est complètement fou.", ex_zh: "他完全瘋了。" },
+            { id: 382, word: "dos", meaning: "後退", ex_kr: "La gymnaste a levé les bras et arqué le dos.", ex_zh: "體操選手舉起雙臂，弓起背。" },
+            { id: 383, word: "sale", meaning: "骯髒的", ex_kr: "Ma voiture est sale.", ex_zh: "我的車很髒。" },
+            { id: 384, word: "anniversaire", meaning: "生日", ex_kr: "Demain est mon anniversaire.", ex_zh: "明天是我的生日。" },
+            { id: 385, word: "oncle", meaning: "叔叔", ex_kr: "Mon oncle a trois enfants.", ex_zh: "我叔叔有三個孩子。" },
+            { id: 386, word: "paix", meaning: "和平", ex_kr: "Ils veulent la paix.", ex_zh: "他們渴望和平。" },
+            { id: 387, word: "battre", meaning: "打", ex_kr: "Le coureur a battu facilement tous ses adversaires.", ex_zh: "這位跑步運動員輕鬆擊敗了所有對手。" },
+            { id: 388, word: "absolument", meaning: "絕對地", ex_kr: "Je veux absolument tout savoir.", ex_zh: "我非常想知道所有的事情。" },
+            { id: 389, word: "finir", meaning: "結束", ex_kr: "En tout cas, je dois finir ce travail pour demain.", ex_zh: "總之，我必須在明天之前完成這項工作。" },
+            { id: 390, word: "libre", meaning: "自由的", ex_kr: "Je suis un homme libre.", ex_zh: "我是一個自由人。" },
+            { id: 391, word: "avion", meaning: "飛機", ex_kr: "L'avion vole au-dessus de l'océan.", ex_zh: "飛機正在飛越海洋。" },
+            { id: 392, word: "rouge", meaning: "紅色的", ex_kr: "Ma nouvelle voiture est rouge.", ex_zh: "我的新車是紅色的。" },
+            { id: 393, word: "retourner", meaning: "返回", ex_kr: "Il est retourné chez lui après des années à l'étranger.", ex_zh: "他在國外生活多年後回到了家鄉。" },
+            { id: 394, word: "bateau", meaning: "船", ex_kr: "Mon bateau est petit.", ex_zh: "我的船很小。" },
+            { id: 395, word: "sympa", meaning: "好的", ex_kr: "Ta maison est très sympa.", ex_zh: "你的房子真漂亮。" },
+            { id: 396, word: "médecin", meaning: "醫生", ex_kr: "Je veux un médecin.", ex_zh: "我需要看醫生。" },
+            { id: 397, word: "balle", meaning: "球", ex_kr: "Beaucoup de revolvers peuvent contenir six balles.", ex_zh: "許多左輪手槍可以裝填六發子彈。" },
+            { id: 398, word: "faim", meaning: "飢餓", ex_kr: "J'ai faim.", ex_zh: "我餓了。" },
+            { id: 399, word: "fond", meaning: "底部", ex_kr: "La corde a atteint le fond du puits.", ex_zh: "繩子垂到了井底。" },
+            { id: 400, word: "habitude", meaning: "習慣", ex_kr: "Je ne veux pas retomber dans mes anciennes habitudes.", ex_zh: "我不想重蹈覆轍。" },
+            { id: 401, word: "porter", meaning: "攜帶", ex_kr: "Nous avons le droit de porter des armes.", ex_zh: "我們有權持有武器。" },
+            { id: 402, word: "autour", meaning: "大約", ex_kr: "Regardez autour de toi.", ex_zh: "環顧四周。" },
+            { id: 403, word: "colère", meaning: "憤怒", ex_kr: "Il a soudainement déchaîné sa colère.", ex_zh: "他突然爆發了怒火。" },
+            { id: 404, word: "or", meaning: "金子", ex_kr: "Les métaux précieux, tels que l'or, sont chers.", ex_zh: "貴金屬，例如黃金，價格昂貴。" },
+            { id: 405, word: "ligne", meaning: "線", ex_kr: "Il est sur une autre ligne.", ex_zh: "他在另一條線上。" },
+            { id: 406, word: "magnifique", meaning: "壯麗", ex_kr: "Ç'est magnifique.", ex_zh: "太棒了。" },
+            { id: 407, word: "gauche", meaning: "左邊", ex_kr: "Votre chambre est la première à gauche.", ex_zh: "您的房間是左邊第一個。" },
+            { id: 408, word: "clair", meaning: "清除", ex_kr: "Tout est clair pour moi maintenant.", ex_zh: "我現在一切都明白了。" },
+            { id: 409, word: "neuf", meaning: "九", ex_kr: "Il est tout neuf.", ex_zh: "它是全新的。" },
+            { id: 410, word: "cadeau", meaning: "禮物", ex_kr: "Je veux te donner un cadeau.", ex_zh: "我想送你一份禮物。" },
+            { id: 411, word: "hors", meaning: "出去", ex_kr: "Hors de ma vue", ex_zh: "從我的視線中消失" },
+            { id: 412, word: "dedans", meaning: "裡面", ex_kr: "Il doit y avoir quelque chose là-dedans.", ex_zh: "裡面一定有什麼東西。" },
+            { id: 413, word: "pote", meaning: "朋友", ex_kr: "Je connais mon pote depuis plusieurs années.", ex_zh: "我認識這位朋友好幾年了。" },
+            { id: 414, word: "expliquer", meaning: "解釋", ex_kr: "Elle ne va pas le leur expliquer.", ex_zh: "她不會向他們解釋的。" },
+            { id: 415, word: "espèce", meaning: "種", ex_kr: "Elle portait une espèce de cape en velours.", ex_zh: "她穿著一件類似天鵝絨的披風。" },
+            { id: 416, word: "montre", meaning: "手錶", ex_kr: "Je vais vous acheter une montre.", ex_zh: "我打算買一隻手錶給你。" },
+            { id: 417, word: "pied", meaning: "腳", ex_kr: "Je vais toujours à pied.", ex_zh: "我總是步行。" },
+            { id: 418, word: "plusieurs", meaning: "一些", ex_kr: "Il est venu plusieurs fois.", ex_zh: "他來過好幾次。" },
+            { id: 419, word: "marcher", meaning: "行人徒步區", ex_kr: "Tu dois me faire marcher.", ex_zh: "你肯定是在開玩笑。" },
+            { id: 420, word: "lumière", meaning: "光", ex_kr: "Je peux voir la lumière.", ex_zh: "我能看到光了。" },
+            { id: 421, word: "réponse", meaning: "回答", ex_kr: "Votre réponse est au point.", ex_zh: "你的回答非常準確。" },
+            { id: 422, word: "coin", meaning: "角落", ex_kr: "Il y a un bureau dans un coin de la pièce.", ex_zh: "房間角落有一張桌子。" },
+            { id: 423, word: "suivre", meaning: "跟隨", ex_kr: "Mon chien me suit partout.", ex_zh: "我的狗總是跟著我。" },
+            { id: 424, word: "moitié", meaning: "一半", ex_kr: "Donne-moi la moitié.", ex_zh: "給我一半。" },
+            { id: 425, word: "pareil", meaning: "相同", ex_kr: "Ces deux maisons ne sont pas pareilles.", ex_zh: "這兩棟房子不一樣。" },
+            { id: 426, word: "joli", meaning: "漂亮的", ex_kr: "Tu es très jolie.", ex_zh: "你很漂亮。" },
+            { id: 427, word: "vouloir", meaning: "想要", ex_kr: "Ne voulez-vous pas savoir qui est cet homme ?", ex_zh: "你不想知道這個人是誰嗎？" },
+            { id: 428, word: "envoyer", meaning: "傳送", ex_kr: "Je veux envoyer une lettre à ma mère.", ex_zh: "我想寫封信給媽媽。" },
+            { id: 429, word: "soleil", meaning: "太陽", ex_kr: "Le soleil est très important pour la vie.", ex_zh: "太陽對生命非常重要。" },
+            { id: 430, word: "selon", meaning: "根據", ex_kr: "Selon le journal, la grève est terminée.", ex_zh: "據報紙報道，罷工已經結束。" },
+            { id: 431, word: "arrière", meaning: "後退", ex_kr: "Je pensais vous avoir dit de rester en arrière.", ex_zh: "我不是告訴過你不要靠近嗎？" },
+            { id: 432, word: "lire", meaning: "讀", ex_kr: "Je veux quelque chose à lire.", ex_zh: "我想找本書讀。" },
+            { id: 433, word: "doucement", meaning: "輕輕地", ex_kr: "Parle doucement.", ex_zh: "輕聲細語。" },
+            { id: 434, word: "tenir", meaning: "抓住", ex_kr: "J'ai tenu la main de mon fils pour traverser la route.", ex_zh: "我牽著兒子的手過馬路。" },
+            { id: 435, word: "sortie", meaning: "出口", ex_kr: "La sortie sera sur la gauche.", ex_zh: "出口在左邊。" },
+            { id: 436, word: "poser", meaning: "放下", ex_kr: "J'ai posé mon verre sur la table de la cuisine.", ex_zh: "我把杯子放在廚房的桌子上。" },
+            { id: 437, word: "chaud", meaning: "熱的", ex_kr: "Le café est très chaud.", ex_zh: "咖啡很燙。" },
+            { id: 438, word: "connaître", meaning: "知道", ex_kr: "Je connais un bon restaurant à proximité.", ex_zh: "我知道附近有一家不錯的餐廳。" },
+            { id: 439, word: "loi", meaning: "法律", ex_kr: "Tu connais la loi.", ex_zh: "你懂法律。" },
+            { id: 440, word: "gamin", meaning: "孩子", ex_kr: "Je ne suis pas un gamin.", ex_zh: "我不是小孩子。" },
+            { id: 441, word: "professeur", meaning: "老師", ex_kr: "Je suis professeur.", ex_zh: "我是老師。" },
+            { id: 442, word: "froid", meaning: "寒冷的", ex_kr: "Il veut boire quelque chose de froid.", ex_zh: "他想喝點冰的。" },
+            { id: 443, word: "but", meaning: "目的", ex_kr: "Nous avons le même but.", ex_zh: "我們擁有相同的目標。" },
+            { id: 444, word: "debout", meaning: "常設", ex_kr: "Il est toujours debout.", ex_zh: "他仍然站著。" },
+            { id: 445, word: "boîte", meaning: "盒子", ex_kr: "Je peux mettre des choses dans une boîte.", ex_zh: "我可以把東西裝進盒子裡。" },
+            { id: 446, word: "ciel", meaning: "天空", ex_kr: "Le soleil est dans le ciel.", ex_zh: "太陽高掛天空。" },
+            { id: 447, word: "enquête", meaning: "調查", ex_kr: "Notre enquête est en cours.", ex_zh: "我們的調查仍在進行中。" },
+            { id: 448, word: "télé", meaning: "電視", ex_kr: "Il regarde parfois la télé.", ex_zh: "他有時會看電視。" },
+            { id: 449, word: "oublier", meaning: "忘記", ex_kr: "Essaie de ne rien oublier.", ex_zh: "盡量不要遺漏任何東西。" },
+            { id: 450, word: "poste", meaning: "工作", ex_kr: "Je dois me rendre au poste de police.", ex_zh: "我需要去警察局。" },
+            { id: 451, word: "triste", meaning: "傷心", ex_kr: "Je suis triste quand il pleut.", ex_zh: "下雨的時候我會感到難過。" },
+            { id: 452, word: "aimer", meaning: "喜歡", ex_kr: "Je vous aime plus que je ne peux dire.", ex_zh: "我愛你勝過千言萬語。" },
+            { id: 453, word: "preuve", meaning: "證據", ex_kr: "Je veux une preuve.", ex_zh: "我需要證據。" },
+            { id: 454, word: "dame", meaning: "女士", ex_kr: "Je me demande qui était cette dame.", ex_zh: "我想知道那位女士是誰。" },
+            { id: 455, word: "écouter", meaning: "聽", ex_kr: "Les enfants écoutaient le professeur attentivement.", ex_zh: "孩子們認真地聽老師講課。" },
+            { id: 456, word: "cuisine", meaning: "廚房", ex_kr: "La cuisine est en bas.", ex_zh: "廚房在樓下。" },
+            { id: 457, word: "sentir", meaning: "感覺", ex_kr: "Je voulais vous faire sentir comme chez vous.", ex_zh: "我想讓你感覺像在家一樣。" },
+            { id: 458, word: "blanc", meaning: "白色的", ex_kr: "Ce chien est blanc.", ex_zh: "這條狗是白色的。" },
+            { id: 459, word: "chanson", meaning: "歌曲", ex_kr: "Cette chanson est belle.", ex_zh: "這首歌真好聽。" },
+            { id: 460, word: "gueule", meaning: "嘴", ex_kr: "Il a une grande gueule.", ex_zh: "他嘴巴很大。" },
+            { id: 461, word: "santé", meaning: "健康", ex_kr: "Mon frère est en bonne santé.", ex_zh: "我哥哥身體健康。" },
+            { id: 462, word: "déjeuner", meaning: "午餐", ex_kr: "Je dois prendre mon déjeuner.", ex_zh: "我得吃午餐了。" },
+            { id: 463, word: "pourtant", meaning: "然而", ex_kr: "J'ai beaucoup mangé ; je n'avais pourtant pas très faim.", ex_zh: "我吃了很多東西，但我不覺得很餓。" },
+            { id: 464, word: "ouvrir", meaning: "打開", ex_kr: "La nouvelle fenêtre est très dure à ouvrir.", ex_zh: "這個新視窗很難打開。" },
+            { id: 465, word: "âme", meaning: "靈魂", ex_kr: "Que son âme repose en paix.", ex_zh: "願他安息。" },
+            { id: 466, word: "voler", meaning: "飛", ex_kr: "L'avion vole à l'altitude normale.", ex_zh: "飛機正以正常高度飛行。" },
+            { id: 467, word: "chacun", meaning: "每個", ex_kr: "Chacun de nous devrait faire de son mieux.", ex_zh: "我們每個人都應該盡力而為。" },
+            { id: 468, word: "clé", meaning: "鑰匙", ex_kr: "Voici la clé de ta chambre.", ex_zh: "這是你房間的鑰匙。" },
+            { id: 469, word: "bord", meaning: "邊緣", ex_kr: "J'ai garé ma voiture sur le bord de la route.", ex_zh: "我把車停在路邊了。" },
+            { id: 470, word: "vendre", meaning: "賣", ex_kr: "Il a décidé de vendre sa voiture.", ex_zh: "他決定賣掉自己的車。" },
+            { id: 471, word: "enfer", meaning: "地獄", ex_kr: "C'était parfois l'enfer, mais j'ai finalement terminé le marathon.", ex_zh: "雖然過程有時非常艱難，但我最終還是完成了馬拉松。" },
+            { id: 472, word: "diable", meaning: "魔鬼", ex_kr: "Les gens disent que je suis le diable.", ex_zh: "人們說我是魔鬼。" },
+            { id: 473, word: "appartement", meaning: "公寓", ex_kr: "Voici la clé de mon appartement.", ex_zh: "這是我公寓的鑰匙。" },
+            { id: 474, word: "étrange", meaning: "奇怪的", ex_kr: "Quel homme étrange", ex_zh: "真是個怪人" },
+            { id: 475, word: "monter", meaning: "向上", ex_kr: "Le moteur a assez de puissance pour monter la colline.", ex_zh: "引擎動力足夠，可以爬上山。" },
+            { id: 476, word: "bouche", meaning: "嘴", ex_kr: "Ouvre la bouche.", ex_zh: "張開嘴。" },
+            { id: 477, word: "écrire", meaning: "寫", ex_kr: "Je vais écrire une lettre.", ex_zh: "我打算寫封信。" },
+            { id: 478, word: "cheval", meaning: "馬", ex_kr: "Je veux monter à cheval.", ex_zh: "我想騎馬。" },
+            { id: 479, word: "honte", meaning: "恥辱", ex_kr: "Il n'y a pas de honte à demander de l'aide.", ex_zh: "尋求幫助並不可恥。" },
+            { id: 480, word: "emmener", meaning: "外帶", ex_kr: "J'emmènerai mon frère à la ville.", ex_zh: "我會帶我弟弟去城裡。" },
+            { id: 481, word: "soin", meaning: "關心", ex_kr: "Je prends soin de moi.", ex_zh: "我會照顧好自己。" },
+            { id: 482, word: "milieu", meaning: "中等的", ex_kr: "Il y a une petite île au milieu du lac.", ex_zh: "湖中央有一個小島。" },
+            { id: 483, word: "prochain", meaning: "下一個", ex_kr: "Elle va avoir un bébé le mois prochain.", ex_zh: "她下個月就要生孩子了。" },
+            { id: 484, word: "rire", meaning: "笑", ex_kr: "Le rire est bon pour la santé.", ex_zh: "笑對健康有益。" },
+            { id: 485, word: "voie", meaning: "方式", ex_kr: "Je pense que nous sommes sur la bonne voie.", ex_zh: "我認為我們走在正確的道路上。" },
+            { id: 486, word: "blague", meaning: "開玩笑", ex_kr: "C'est une blague entre nous.", ex_zh: "這是我們之間的玩笑。" },
+            { id: 487, word: "trou", meaning: "洞", ex_kr: "Je dois creuser un trou afin de planter cette fleur.", ex_zh: "我需要挖個坑來種植這朵花。" },
+            { id: 488, word: "intérêt", meaning: "興趣", ex_kr: "Je doute que ce soit de quelque intérêt pour vous.", ex_zh: "我懷疑你對此不會感興趣。" },
+            { id: 489, word: "tel", meaning: "這樣的", ex_kr: "Ne sois pas un tel pauvre type !", ex_zh: "別這麼沒出息！" },
+            { id: 490, word: "réunion", meaning: "會議", ex_kr: "Elle est en réunion.", ex_zh: "她正在開會。" },
+            { id: 491, word: "époque", meaning: "時代", ex_kr: "Tu étais si jeune à cette époque.", ex_zh: "你那時還很年輕。" },
+            { id: 492, word: "cacher", meaning: "隱藏", ex_kr: "Je dois me cacher.", ex_zh: "我得躲起來。" },
+            { id: 493, word: "peau", meaning: "皮膚", ex_kr: "Les serpents perdent régulièrement leur peau.", ex_zh: "蛇會定期蛻皮。" },
+            { id: 494, word: "dingue", meaning: "瘋狂的", ex_kr: "C'est complètement dingue.", ex_zh: "這簡直太瘋狂了。" },
+            { id: 495, word: "robe", meaning: "裙子", ex_kr: "C'est une jolie robe.", ex_zh: "這是一條漂亮的裙子。" },
+            { id: 496, word: "bière", meaning: "啤酒", ex_kr: "Avez-vous de la bière ?", ex_zh: "你們有啤酒嗎？" },
+            { id: 497, word: "lequel", meaning: "哪個", ex_kr: "Lequel devrais-je utiliser ?", ex_zh: "我該用哪一個？" },
+            { id: 498, word: "don", meaning: "大學教師", ex_kr: "La musique est un don de Dieu.", ex_zh: "音樂是上帝的恩賜。" },
+            { id: 499, word: "journal", meaning: "報紙", ex_kr: "Avez-vous fini de lire le journal?", ex_zh: "你讀完報紙了嗎？" },
+            { id: 500, word: "sept", meaning: "七", ex_kr: "Je serai de retour à sept heures.", ex_zh: "我七點鐘回來。" },
+            { id: 501, word: "base", meaning: "根據", ex_kr: "Le secteur minier est la base de notre économie.", ex_zh: "採礦業是我國經濟的基石。" },
+            { id: 502, word: "vin", meaning: "葡萄酒", ex_kr: "Donne-moi le vin.", ex_zh: "把酒給我。" },
+            { id: 503, word: "servir", meaning: "服務", ex_kr: "Puis-je te servir un verre?", ex_zh: "要不要我給你倒杯飲料？" },
+            { id: 504, word: "jeter", meaning: "丟", ex_kr: "Elle a jeté la balle dans le panier.", ex_zh: "她把球投進了籃框。" },
+            { id: 505, word: "mer", meaning: "海", ex_kr: "La fenêtre de ma chambre donne sur la mer.", ex_zh: "我的臥室窗戶可以俯瞰大海。" },
+            { id: 506, word: "tort", meaning: "錯誤的", ex_kr: "Le conducteur était en tort en passant au feu rouge.", ex_zh: "司機闖紅燈，負有責任。" },
+            { id: 507, word: "ouvert", meaning: "打開", ex_kr: "C'est ouvert.", ex_zh: "它已開放。" },
+            { id: 508, word: "récupérer", meaning: "恢復", ex_kr: "Nous pouvons facilement récupérer les données stockées dans le système.", ex_zh: "我們可以輕鬆地檢索系統中儲存的資料。" },
+            { id: 509, word: "nez", meaning: "鼻子", ex_kr: "Mon nez est gros.", ex_zh: "我的鼻子很大。" },
+            { id: 510, word: "enceinte", meaning: "懷孕", ex_kr: "Elle est enceinte.", ex_zh: "她懷孕了。" },
+            { id: 511, word: "secours", meaning: "救援", ex_kr: "Le navire était en difficulté et a appelé au secours.", ex_zh: "船隻遇險，發出求救訊號。" },
+            { id: 512, word: "entrée", meaning: "入口", ex_kr: "Mon bureau est accessible depuis l'entrée principale.", ex_zh: "我的辦公室從正門就可以進入。" },
+            { id: 513, word: "fric", meaning: "錢", ex_kr: "Je me fais du fric en achetant et en revendant des voitures.", ex_zh: "我靠買賣汽車賺錢。" },
+            { id: 514, word: "environ", meaning: "大約", ex_kr: "Je serai de retour dans environ une heure.", ex_zh: "我大約一個小時後回來。" },
+            { id: 515, word: "répondre", meaning: "回答", ex_kr: "Tu dois répondre à ces questions.", ex_zh: "你必須回答這些問題。" },
+            { id: 516, word: "départ", meaning: "離開", ex_kr: "Il le savait depuis le départ.", ex_zh: "他從一開始就知道這一點。" },
+            { id: 517, word: "vérifier", meaning: "查看", ex_kr: "Je peux vérifier par moi-même que c'est la vérité.", ex_zh: "我可以親自驗證這是事實。" },
+            { id: 518, word: "lune", meaning: "月亮", ex_kr: "Il a marché sur la lune.", ex_zh: "他曾登上月球。" },
+            { id: 519, word: "bruit", meaning: "噪音", ex_kr: "Nous avons fait beaucoup de bruit.", ex_zh: "我們製造了很多噪音。" },
+            { id: 520, word: "intéressant", meaning: "有趣的", ex_kr: "C'est très intéressant.", ex_zh: "這很有意思。" },
+            { id: 521, word: "lycée", meaning: "中學", ex_kr: "Je pense que tu devrais aller au lycée.", ex_zh: "我認為你應該去上高中。" },
+            { id: 522, word: "inutile", meaning: "無用", ex_kr: "Cela la rendrait totalement inutile", ex_zh: "那將使它完全沒用。" },
+            { id: 523, word: "tas", meaning: "樁", ex_kr: "Le couple a pris des tas de photos pendant le voyage.", ex_zh: "這對夫婦在旅途中拍了很多照片。" },
+            { id: 524, word: "apparemment", meaning: "顯然", ex_kr: "Apparement, ils ont survécu.", ex_zh: "顯然，他們活了下來。" },
+            { id: 525, word: "bête", meaning: "獸", ex_kr: "J'ai raconté une blague bête mais drôle.", ex_zh: "我講了一個很傻但很有趣的笑話。" },
+            { id: 526, word: "avenir", meaning: "未來", ex_kr: "Les enfants sont notre avenir.", ex_zh: "兒童是我們的未來。" },
+            { id: 527, word: "thé", meaning: "茶", ex_kr: "Tu veux un peu de thé?", ex_zh: "你想喝茶嗎？" },
+            { id: 528, word: "bande", meaning: "樂團", ex_kr: "La police a arrêté une bande de voleurs.", ex_zh: "警方逮捕了一夥竊盜犯。" },
+            { id: 529, word: "œil", meaning: "眼睛", ex_kr: "Garde un œil sur les filles.", ex_zh: "盯緊那些女孩。" },
+            { id: 530, word: "plupart", meaning: "最多", ex_kr: "La plupart de l'électorat a voté oui.", ex_zh: "大多數選民投了贊成票。" },
+            { id: 531, word: "procès", meaning: "審判", ex_kr: "L'avocat défendra la victime au procès.", ex_zh: "律師將在庭審中為受害者辯護。" },
+            { id: 532, word: "sérieusement", meaning: "嚴重地", ex_kr: "Il nous faut parler sérieusement.", ex_zh: "我們需要認真談談。" },
+            { id: 533, word: "pitié", meaning: "遺憾", ex_kr: "Parfois, j'ai pitié d'elle.", ex_zh: "有時我會同情她。" },
+            { id: 534, word: "humain", meaning: "人類", ex_kr: "La psyché humaine est très complexe.", ex_zh: "人類心理非常複雜。" },
+            { id: 535, word: "liberté", meaning: "自由", ex_kr: "Je veux ma liberté.", ex_zh: "我想要自由。" },
+            { id: 536, word: "anglais", meaning: "英語", ex_kr: "Je ne parle pas anglais.", ex_zh: "我不會說英語。" },
+            { id: 537, word: "nourriture", meaning: "食物", ex_kr: "La nourriture est sur la table.", ex_zh: "飯菜已經擺在桌上了。" },
+            { id: 538, word: "nord", meaning: "北", ex_kr: "Ma maison est dans la partie nord de la ville.", ex_zh: "我的房子在城市的北方。" },
+            { id: 539, word: "éviter", meaning: "避免", ex_kr: "C'est un homme paisible qui évite le conflit.", ex_zh: "他是個愛好和平、避免衝突的人。" },
+            { id: 540, word: "cour", meaning: "法庭", ex_kr: "Il y a une cour derrière la maison.", ex_zh: "房子後面有一個院子。" },
+            { id: 541, word: "empêcher", meaning: "為了防止", ex_kr: "La barrière empêche les enfants de prendre les escaliers.", ex_zh: "此護欄可防止兒童使用樓梯。" },
+            { id: 542, word: "mur", meaning: "牆", ex_kr: "Mets-la sur le mur.", ex_zh: "把它掛在牆上。" },
+            { id: 543, word: "conduire", meaning: "開車", ex_kr: "La prochaine fois ce sera à moi de conduire.", ex_zh: "下次就輪到我開車了。" },
+            { id: 544, word: "tante", meaning: "阿姨", ex_kr: "Elle ressemble à sa tante.", ex_zh: "她長得像她姑姑。" },
+            { id: 545, word: "marier", meaning: "結婚", ex_kr: "Je veux me marier avec une fille comme elle.", ex_zh: "我想娶一個像她一樣的女孩。" },
+            { id: 546, word: "vide", meaning: "空的", ex_kr: "L'avion était presque vide.", ex_zh: "飛機上幾乎空無一人。" },
+            { id: 547, word: "sud", meaning: "南", ex_kr: "Ma maison est face au sud.", ex_zh: "我家朝南。" },
+            { id: 548, word: "église", meaning: "教會", ex_kr: "Une allée étroite mène à la vieille église.", ex_zh: "一條狹窄的小巷通往那座古老的教堂。" },
+            { id: 549, word: "merveilleux", meaning: "精彩的", ex_kr: "Ça a été merveilleux.", ex_zh: "太棒了。" },
+            { id: 550, word: "huit", meaning: "八", ex_kr: "Mon frère a huit ans de plus que moi.", ex_zh: "我哥哥比我大八歲。" },
+            { id: 551, word: "sol", meaning: "地面", ex_kr: "Regarde le sol.", ex_zh: "看看地面。" },
+            { id: 552, word: "niveau", meaning: "等級", ex_kr: "Le premier niveau de ce jeu vidéo est très simple.", ex_zh: "這款遊戲的第一關非常簡單。" },
+            { id: 553, word: "fenêtre", meaning: "窗戶", ex_kr: "Voulez-vous que je ferme la fenêtre ?", ex_zh: "你想讓我關上窗戶嗎？" },
+            { id: 554, word: "magasin", meaning: "店鋪", ex_kr: "Je suis allé au magasin.", ex_zh: "我去了商店。" },
+            { id: 555, word: "asseoir", meaning: "坐", ex_kr: "L'hôte invita ses convives à s'asseoir à table.", ex_zh: "主人邀請客人們到桌邊坐下。" },
+            { id: 556, word: "mignon", meaning: "可愛的", ex_kr: "C'est très mignon.", ex_zh: "它非常可愛。" },
+            { id: 557, word: "obtenir", meaning: "得到", ex_kr: "Mon frère connaît la procédure pour obtenir un visa.", ex_zh: "我哥哥知道辦理簽證的流程。" },
+            { id: 558, word: "reine", meaning: "女王", ex_kr: "Je vois une reine.", ex_zh: "我看到了一位女王。" },
+            { id: 559, word: "espoir", meaning: "希望", ex_kr: "C'est son seul espoir.", ex_zh: "這是他唯一的希望。" },
+            { id: 560, word: "glace", meaning: "冰", ex_kr: "L'eau est de la glace liquéfiée.", ex_zh: "水是液態的冰。" },
+            { id: 561, word: "danser", meaning: "跳舞", ex_kr: "Avez-vous envie de danser?", ex_zh: "你想跳舞嗎？" },
+            { id: 562, word: "quartier", meaning: "鄰裡", ex_kr: "Je connais ce quartier.", ex_zh: "我熟悉這個街區。" },
+            { id: 563, word: "lorsque", meaning: "什麼時候", ex_kr: "Lorsque je me trouve avec toi, je suis heureux.", ex_zh: "和你在一起的時候，我很快樂。" },
+            { id: 564, word: "douleur", meaning: "疼痛", ex_kr: "Je vais vous donner quelque chose pour la douleur.", ex_zh: "我會給你點止痛藥。" },
+            { id: 565, word: "ravi", meaning: "高興極了", ex_kr: "Il sera ravi de te voir.", ex_zh: "他見到你一定會很高興。" },
+            { id: 566, word: "spectacle", meaning: "展示", ex_kr: "Je veux voir un spectacle.", ex_zh: "我想去看表演。" },
+            { id: 567, word: "proche", meaning: "關閉", ex_kr: "Je veux savoir si c'est proche.", ex_zh: "我想知道它是否很近。" },
+            { id: 568, word: "d'abord", meaning: "首先", ex_kr: "Je vais d'abord lire les instructions.", ex_zh: "我先閱讀說明書。" },
+            { id: 569, word: "honnête", meaning: "誠實的", ex_kr: "Sois honnête avec moi.", ex_zh: "請對我坦誠相待。" },
+            { id: 570, word: "camion", meaning: "卡車", ex_kr: "Le camion est parti.", ex_zh: "卡車已經離開了。" },
+            { id: 571, word: "assurer", meaning: "確保", ex_kr: "Le logiciel assure le bon fonctionnement de la machine.", ex_zh: "該軟體確保機器正常運作。" },
+            { id: 572, word: "projet", meaning: "專案", ex_kr: "Je suis fier de faire partie de ce projet.", ex_zh: "我很榮幸能參與這個計畫。" },
+            { id: 573, word: "parole", meaning: "單字", ex_kr: "Il est fiable et tient toujours parole.", ex_zh: "他可靠，從不食言。" },
+            { id: 574, word: "gosse", meaning: "孩子", ex_kr: "Mets le gosse au lit !", ex_zh: "哄孩子睡覺！" },
+            { id: 575, word: "discuter", meaning: "討論", ex_kr: "Elle avait quelque chose à discuter avec lui.", ex_zh: "她有事要跟他商量。" },
+            { id: 576, word: "remettre", meaning: "放回", ex_kr: "J'ai remis le livre sur l'étagère.", ex_zh: "我把書放回了書架。" },
+            { id: 577, word: "copain", meaning: "男友", ex_kr: "Les enfants ont passé l'après-midi avec leurs copains.", ex_zh: "孩子們在下午和朋友們一起度過了時光。" },
+            { id: 578, word: "épouser", meaning: "結婚", ex_kr: "Je vous aime et je veux vous épouser.", ex_zh: "我愛你，我想娶你。" },
+            { id: 579, word: "portable", meaning: "便攜的", ex_kr: "J'utilise un portable pour appeler mes amis.", ex_zh: "我用手機打電話給朋友。" },
+            { id: 580, word: "choisir", meaning: "選擇", ex_kr: "C'est dur de choisir.", ex_zh: "很難選擇。" },
+            { id: 581, word: "rappeler", meaning: "提醒", ex_kr: "Je ne me rappelle plus très bien.", ex_zh: "我記不太清楚了。" },
+            { id: 582, word: "offrir", meaning: "提供", ex_kr: "Puis-je vous offrir une boisson ?", ex_zh: "要不要喝點什麼？" },
+            { id: 583, word: "pression", meaning: "壓力", ex_kr: "Mes parents me mettent la pression.", ex_zh: "父母給我施加了壓力。" },
+            { id: 584, word: "découvrir", meaning: "發現", ex_kr: "Je ferai tout mon possible pour découvrir qui a fait ça.", ex_zh: "我會盡一切努力找出是誰幹的。" },
+            { id: 585, word: "court", meaning: "短的", ex_kr: "Un résumé doit être court et concis.", ex_zh: "摘要應簡短明了。" },
+            { id: 586, word: "bain", meaning: "洗澡", ex_kr: "Votre bain est prêt.", ex_zh: "您的浴缸已準備就緒。" },
+            { id: 587, word: "détruire", meaning: "破壞", ex_kr: "La tempête menace de détruire les récoltes.", ex_zh: "暴風雨有可能摧毀農作物。" },
+            { id: 588, word: "chanter", meaning: "唱歌", ex_kr: "C'est à ton tour de chanter.", ex_zh: "輪到你唱歌了。" },
+            { id: 589, word: "énorme", meaning: "巨大的", ex_kr: "C'est énorme.", ex_zh: "那可是件大事。" },
+            { id: 590, word: "envers", meaning: "向", ex_kr: "Il est bien disposé envers elle.", ex_zh: "他對她抱有好感。" },
+            { id: 591, word: "réfléchir", meaning: "反思", ex_kr: "Donne-moi un peu de temps pour réfléchir.", ex_zh: "給我點時間考慮。" },
+            { id: 592, word: "pierre", meaning: "岩石", ex_kr: "J'ai un coffre plein de pierres précieuses.", ex_zh: "我有一個裝滿寶石的箱子。" },
+            { id: 593, word: "lâche", meaning: "懦夫", ex_kr: "Il est lâche.", ex_zh: "他是個懦夫。" },
+            { id: 594, word: "enlever", meaning: "移除", ex_kr: "Je vais enlever les vieux livres de l'étagère.", ex_zh: "我打算把舊書從書架上拿下來。" },
+            { id: 595, word: "sauter", meaning: "跳", ex_kr: "Il a défié son ami de sauter.", ex_zh: "他向朋友發起挑戰，讓他跳下去。" },
+            { id: 596, word: "nécessaire", meaning: "必要的", ex_kr: "Parfois il est nécessaire de dire la vérité.", ex_zh: "有時候，說真話是必要的。" },
+            { id: 597, word: "immédiatement", meaning: "立即地", ex_kr: "Arrête immédiateme", ex_zh: "立即停止" },
+            { id: 598, word: "arranger", meaning: "安排", ex_kr: "Pouvons-nous arranger ça ?", ex_zh: "我們能解決這個問題嗎？" },
+            { id: 599, word: "couteau", meaning: "刀", ex_kr: "C'est un couteau de cuisine.", ex_zh: "這是一把廚房刀。" },
+            { id: 600, word: "durant", meaning: "期間", ex_kr: "Il court durant une heure tous les matins.", ex_zh: "他每天早上跑步一小時。" },
+            { id: 601, word: "ancien", meaning: "古老的", ex_kr: "Ce livre est très ancien.", ex_zh: "這本書很古老了。" },
+            { id: 602, word: "vent", meaning: "風", ex_kr: "Quel vent !", ex_zh: "好大的風啊！" },
+            { id: 603, word: "tourner", meaning: "轉動", ex_kr: "Tourne à la deuxième à gauche.", ex_zh: "第二個路口左轉。" },
+            { id: 604, word: "repas", meaning: "一頓飯", ex_kr: "Le repas est prêt.", ex_zh: "飯菜準備好了。" },
+            { id: 605, word: "taille", meaning: "尺寸", ex_kr: "Regardez la taille de ce truc !", ex_zh: "看看那東西有多大！" },
+            { id: 606, word: "politique", meaning: "政策", ex_kr: "En période électorale, mes amis aiment discuter de politique.", ex_zh: "選舉期間，我的朋友們喜歡討論政治。" },
+            { id: 607, word: "papier", meaning: "紙", ex_kr: "Les livres sont faits de papier.", ex_zh: "書是用紙做的。" },
+            { id: 608, word: "contrat", meaning: "合約", ex_kr: "Nous avons un contrat.", ex_zh: "我們有合約。" },
+            { id: 609, word: "chat", meaning: "貓", ex_kr: "Le chat est dans la maison.", ex_zh: "貓在屋裡。" },
+            { id: 610, word: "beauté", meaning: "美麗", ex_kr: "C'est une vraie beauté.", ex_zh: "她真是個美人。" },
+            { id: 611, word: "ordinateur", meaning: "電腦", ex_kr: "Je vais peut-être acheter un ordinateur tout neuf.", ex_zh: "我可能會買一台全新的電腦。" },
+            { id: 612, word: "carrière", meaning: "職業", ex_kr: "Sa carrière est une inspiration pour ses pairs.", ex_zh: "他的職業生涯激勵著同行。" },
+            { id: 613, word: "bonheur", meaning: "幸福", ex_kr: "Je sais que vous voulez mon bonheur.", ex_zh: "我知道你希望我開心。" },
+            { id: 614, word: "mémoire", meaning: "記憶", ex_kr: "Mon frère a une bonne mémoire.", ex_zh: "我哥哥記憶力很好。" },
+            { id: 615, word: "permis", meaning: "允許", ex_kr: "Un jour, ils vont te prendre ton permis de conduire.", ex_zh: "總有一天，他們會吊銷你的駕照。" },
+            { id: 616, word: "contraire", meaning: "對面的", ex_kr: "Elle fait toujours le contraire.", ex_zh: "她總是反其道而行。" },
+            { id: 617, word: "joyeux", meaning: "快樂的", ex_kr: "Le climat à bord du bateau était joyeux.", ex_zh: "船上的氣氛很愉快。" },
+            { id: 618, word: "parmi", meaning: "之中", ex_kr: "Il n'y a que dix garçons parmi tous les élèves.", ex_zh: "所有學生中只有十個男生。" },
+            { id: 619, word: "crise", meaning: "危機", ex_kr: "Le président a convoqué une réunion pour répondre à la crise.", ex_zh: "總統召集會議討論危機。" },
+            { id: 620, word: "marrant", meaning: "有趣的", ex_kr: "C'est très marrant.", ex_zh: "真好笑。" },
+            { id: 621, word: "série", meaning: "系列", ex_kr: "J'ai hâte de voir le dernier épisode de cette série.", ex_zh: "我很期待看到這部劇的最後一集。" },
+            { id: 622, word: "piste", meaning: "追蹤", ex_kr: "Le chasseur a suivi la piste du cerf.", ex_zh: "獵人循著鹿的蹤跡而去。" },
+            { id: 623, word: "puisque", meaning: "自從", ex_kr: "Puisque je suis ici, laissez-moi vous aider.", ex_zh: "既然來了，就讓我來幫你吧。" },
+            { id: 624, word: "maladie", meaning: "疾病", ex_kr: "Ma maladie n'est pas contagieuse.", ex_zh: "我的病不傳染。" },
+            { id: 625, word: "cible", meaning: "目標", ex_kr: "Tu as touché au centre de la cible.", ex_zh: "你擊中了靶心。" },
+            { id: 626, word: "fil", meaning: "線", ex_kr: "Le fil est utilisé en broderie.", ex_zh: "這種線用於刺繡。" },
+            { id: 627, word: "pleurer", meaning: "哭", ex_kr: "Allons ! Ce n'est pas la peine de pleurer pour ça.", ex_zh: "拜託！沒必要為此哭泣。" },
+            { id: 628, word: "totalement", meaning: "完全", ex_kr: "Le mien est totalement différent.", ex_zh: "我的情況完全不同。" },
+            { id: 629, word: "remercier", meaning: "感謝", ex_kr: "Je veux vous remercier pour tout ce que vous avez fait.", ex_zh: "我想感謝你所做的一切。" },
+            { id: 630, word: "entier", meaning: "全部的", ex_kr: "Le monde entier nous regarde.", ex_zh: "全世界都在關注我們。" },
+            { id: 631, word: "couleur", meaning: "顏色", ex_kr: "De quelle couleur sont-ils?", ex_zh: "它們是什麼顏色的？" },
+            { id: 632, word: "île", meaning: "島", ex_kr: "Il y a une petite île au milieu du lac.", ex_zh: "湖中央有一個小島。" },
+            { id: 633, word: "fermer", meaning: "關閉", ex_kr: "Puis-je vous demander de fermer la fenêtre ?", ex_zh: "請您關上窗戶好嗎？" },
+            { id: 634, word: "soldat", meaning: "士兵", ex_kr: "Cet homme est soldat.", ex_zh: "這是一名軍人。" },
+            { id: 635, word: "étage", meaning: "地面", ex_kr: "Mon bureau est au quatrième étage.", ex_zh: "我的辦公室在四樓。" },
+            { id: 636, word: "épouse", meaning: "結婚", ex_kr: "Voici mon épouse.", ex_zh: "這是我妻子。" },
+            { id: 637, word: "régler", meaning: "定居", ex_kr: "Mon père m'a aidé à régler mes dettes.", ex_zh: "我父親幫我還清了債務。" },
+            { id: 638, word: "frais", meaning: "成本", ex_kr: "Je veux boire quelque chose de frais.", ex_zh: "我想喝點冰的。" },
+            { id: 639, word: "langue", meaning: "語言", ex_kr: "Je peux comprendre ta langue.", ex_zh: "我能聽懂你的語言。" },
+            { id: 640, word: "mentir", meaning: "說謊", ex_kr: "J'ai promis à mes amis que je ne leur mentirais jamais.", ex_zh: "我向朋友承諾過，我永遠不會對他們說謊。" },
+            { id: 641, word: "sacré", meaning: "神聖", ex_kr: "Beaucoup de religions ont des textes sacrés.", ex_zh: "許多宗教都有神聖的經典。" },
+            { id: 642, word: "poisson", meaning: "魚", ex_kr: "Vous aimez le poisson ?", ex_zh: "你喜歡吃魚嗎？" },
+            { id: 643, word: "frapper", meaning: "打", ex_kr: "Veuillez frapper avant d'entrer.", ex_zh: "請先敲門再進入。" },
+            { id: 644, word: "courir", meaning: "跑步", ex_kr: "Un guépard peut courir très rapidement.", ex_zh: "獵豹奔跑速度非常快。" },
+            { id: 645, word: "bouger", meaning: "移動", ex_kr: "Je leur dis de ne pas bouger.", ex_zh: "我告訴他們不要動。" },
+            { id: 646, word: "rejoindre", meaning: "加入", ex_kr: "Je vais rejoindre le club de golf le mois prochain.", ex_zh: "我下個月將加入高爾夫俱樂部。" },
+            { id: 647, word: "bleu", meaning: "藍色的", ex_kr: "Le bleu vous va très bien.", ex_zh: "藍色很適合你。" },
+            { id: 648, word: "destin", meaning: "命運", ex_kr: "C'est ton destin.", ex_zh: "這是你的命運。" },
+            { id: 649, word: "faible", meaning: "虛弱的", ex_kr: "J'ai un rhume et je me sens très faible.", ex_zh: "我感冒了，感覺很虛弱。" },
+            { id: 650, word: "lait", meaning: "牛奶", ex_kr: "Je veux du lait.", ex_zh: "我想喝牛奶。" },
+            { id: 651, word: "adieu", meaning: "告別", ex_kr: "Adieu!", ex_zh: "告別！" },
+            { id: 652, word: "pont", meaning: "橋", ex_kr: "Ce pont est très beau.", ex_zh: "這座橋真漂亮。" },
+            { id: 653, word: "costume", meaning: "套裝", ex_kr: "Ce costume te va bien.", ex_zh: "這身西裝很適合你。" },
+            { id: 654, word: "attraper", meaning: "抓住", ex_kr: "Je vais te montrer comment attraper un poisson.", ex_zh: "我來教你們如何釣魚。" },
+            { id: 655, word: "partenaire", meaning: "夥伴", ex_kr: "Je suis ton partenaire.", ex_zh: "我是你的搭檔。" },
+            { id: 656, word: "goût", meaning: "品嚐", ex_kr: "C'est une question de goût.", ex_zh: "這是個人口味問題。" },
+            { id: 657, word: "sourire", meaning: "微笑", ex_kr: "Elle lui a envoyé un grand sourire.", ex_zh: "她給了他一個燦爛的笑容。" },
+            { id: 658, word: "bouteille", meaning: "瓶子", ex_kr: "La bouteille est pleine.", ex_zh: "瓶子滿了。" },
+            { id: 659, word: "formidable", meaning: "巨大的", ex_kr: "Tu es une femme formidable !", ex_zh: "你是一位很棒的女性！" },
+            { id: 660, word: "tribunal", meaning: "法庭", ex_kr: "On se verra au tribunal.", ex_zh: "我們法庭上見。" },
+            { id: 661, word: "français", meaning: "法語", ex_kr: "Je connais un peu de français.", ex_zh: "我懂一點法語。" },
+            { id: 662, word: "foi", meaning: "信仰", ex_kr: "C'est un homme de foi.", ex_zh: "他是一位虔誠的信徒。" },
+            { id: 663, word: "évidemment", meaning: "明顯地", ex_kr: "Évidemment, vous pouvez rester.", ex_zh: "當然，你可以留下來。" },
+            { id: 664, word: "chasse", meaning: "打獵", ex_kr: "Ils ont fait une bonne chasse.", ex_zh: "他們狩獵收穫頗豐。" },
+            { id: 665, word: "amener", meaning: "帶來", ex_kr: "J'amène mon fils à l'école.", ex_zh: "我要送兒子去上學。" },
+            { id: 666, word: "os", meaning: "骨", ex_kr: "Vous êtes-vous jamais cassé un os ?", ex_zh: "你曾經骨折過嗎？" },
+            { id: 667, word: "afin", meaning: "為了", ex_kr: "Je prends des leçons afin d'apprendre le français.", ex_zh: "我正在上課學習法語。" },
+            { id: 668, word: "gâteau", meaning: "蛋糕", ex_kr: "Ma mère fait le meilleur gâteau au chocolat.", ex_zh: "我媽媽做的巧克力蛋糕最好吃。" },
+            { id: 669, word: "cou", meaning: "脖子", ex_kr: "Notre entraîneur porte un sifflet autour du cou.", ex_zh: "我們的教練脖子上掛著一個哨子。" },
+            { id: 670, word: "couper", meaning: "切", ex_kr: "Tu devrais te couper les cheveux.", ex_zh: "你應該剪頭髮。" },
+            { id: 671, word: "utile", meaning: "有用", ex_kr: "Je veux être utile.", ex_zh: "我想做點有用的事。" },
+            { id: 672, word: "jambe", meaning: "腿", ex_kr: "Le chien m'a mordu la jambe.", ex_zh: "我的腿被狗咬了。" },
+            { id: 673, word: "bref", meaning: "短的", ex_kr: "Le résumé de deux minutes était bref mais intéressant.", ex_zh: "兩分鐘的總結雖然簡短，但很有趣。" },
+            { id: 674, word: "morceau", meaning: "片", ex_kr: "Elle lui a donné un morceau de papier.", ex_zh: "她遞給他一張紙。" },
+            { id: 675, word: "raconter", meaning: "告訴", ex_kr: "Je vais te raconter une histoire.", ex_zh: "我要給你們講個故事。" },
+            { id: 676, word: "justement", meaning: "確切地", ex_kr: "C’est justement ce qu’il fallait faire.", ex_zh: "這正是應該做的。" },
+            { id: 677, word: "discours", meaning: "演講", ex_kr: "Elle avait peur de faire un discours.", ex_zh: "她害怕發表演講。" },
+            { id: 678, word: "rapidement", meaning: "迅速地", ex_kr: "Je veux faire ça rapidement.", ex_zh: "我想盡快完成這件事。" },
+            { id: 679, word: "méchant", meaning: "邪惡", ex_kr: "Vous êtes si méchant.", ex_zh: "你真壞。" },
+            { id: 680, word: "jouet", meaning: "玩具", ex_kr: "J'ai finalement acheté le jouet.", ex_zh: "我終於買到那個玩具了。" },
+            { id: 681, word: "lien", meaning: "關聯", ex_kr: "Il y a un lien évident entre la nutrition et la santé.", ex_zh: "營養與健康之間有著明顯的關聯。" },
+            { id: 682, word: "appareil", meaning: "裝置", ex_kr: "L'appareil doit être placé sur un sol plat.", ex_zh: "該設備必須放置在平坦的表面上。" },
+            { id: 683, word: "ange", meaning: "天使", ex_kr: "Tu es un ange.", ex_zh: "你真是個天使。" },
+            { id: 684, word: "compter", meaning: "數數", ex_kr: "Mon fils sait compter jusqu'à vingt.", ex_zh: "我兒子會數到二十。" },
+            { id: 685, word: "malgré", meaning: "儘管", ex_kr: "Malgré l'embouteillage, nous sommes arrivés à temps.", ex_zh: "儘管交通堵塞，我們還是準時到達了。" },
+            { id: 686, word: "reprendre", meaning: "恢復", ex_kr: "Je veux reprendre le cours de ma vie.", ex_zh: "我想讓我的生活重回正軌。" },
+            { id: 687, word: "magie", meaning: "魔法", ex_kr: "Ça marche comme par magie.", ex_zh: "它簡直太神奇了。" },
+            { id: 688, word: "chapeau", meaning: "帽子", ex_kr: "Il me faut un chapeau.", ex_zh: "我需要一頂帽子。" },
+            { id: 689, word: "décider", meaning: "決定", ex_kr: "C'est à toi de décider ce que tu veux faire.", ex_zh: "你想做什麼，由你決定。" },
+            { id: 690, word: "agir", meaning: "行為", ex_kr: "Je n'ai jamais vu mon chat agir comme ça.", ex_zh: "我從來沒見過我的貓有這種行為。" },
+            { id: 691, word: "vendredi", meaning: "星期五", ex_kr: "On fait une fête vendredi soir.", ex_zh: "我們週五晚上要舉辦派對。" },
+            { id: 692, word: "malheureusement", meaning: "很遺憾", ex_kr: "Malheureusement, j'ai perdu le pari.", ex_zh: "很遺憾，我輸了賭博。" },
+            { id: 693, word: "mince", meaning: "薄的", ex_kr: "La couche de glace était mince et fragile.", ex_zh: "冰層很薄，也很脆弱。" },
+            { id: 694, word: "saison", meaning: "季節", ex_kr: "Il fait chaud pour la saison.", ex_zh: "一年中的這個時候天氣很溫暖。" },
+            { id: 695, word: "gérer", meaning: "管理", ex_kr: "Le nouvel employé gère les comptes des clients.", ex_zh: "新員工負責管理客戶帳戶。" },
+            { id: 696, word: "pain", meaning: "麵包", ex_kr: "Je vais faire du pain.", ex_zh: "我打算烤些麵包。" },
+            { id: 697, word: "règle", meaning: "統治者", ex_kr: "Je comprends la règle.", ex_zh: "我理解這條規則。" },
+            { id: 698, word: "malin", meaning: "聰明的", ex_kr: "Ce garçon est malin.", ex_zh: "這個男孩很聰明。" },
+            { id: 699, word: "toit", meaning: "屋頂", ex_kr: "Le chat est sur le toit.", ex_zh: "貓在屋頂上。" },
+            { id: 700, word: "doux", meaning: "柔軟的", ex_kr: "Le tissu de ma robe est très doux.", ex_zh: "我的裙子佈料非常柔軟。" },
+            { id: 701, word: "coffre", meaning: "胸部", ex_kr: "Ferme le coffre.", ex_zh: "關閉後行李箱。" },
+            { id: 702, word: "couverture", meaning: "毯子", ex_kr: "Je veux une couverture.", ex_zh: "我想要個封面。" },
+            { id: 703, word: "arbre", meaning: "樹", ex_kr: "Cet arbre est plus vieux que cette voiture.", ex_zh: "這棵樹比這輛車年紀還大。" },
+            { id: 704, word: "réparer", meaning: "使固定", ex_kr: "Je pense que je peux réparer ça.", ex_zh: "我覺得我可以解決這個問題。" },
+            { id: 705, word: "lever", meaning: "舉起", ex_kr: "Les élèves doivent lever la main s'ils ont une question.", ex_zh: "學生如有疑問，請舉手。" },
+            { id: 706, word: "enchanté", meaning: "高興極了", ex_kr: "Je suis enchanté de vous rencontrer.", ex_zh: "很高興見到你。" },
+            { id: 707, word: "apporter", meaning: "帶來", ex_kr: "Le serveur nous a apporté la note.", ex_zh: "服務生把賬單拿來了。" },
+            { id: 708, word: "jardin", meaning: "花園", ex_kr: "Mon père est dans le jardin.", ex_zh: "我父親在花園裡。" },
+            { id: 709, word: "partager", meaning: "分享", ex_kr: "Je veux le partager avec vous.", ex_zh: "我想和你分享。" },
+            { id: 710, word: "plage", meaning: "海灘", ex_kr: "Notre maison est face à la plage.", ex_zh: "我們家面向大海。" },
+            { id: 711, word: "échapper", meaning: "逃脫", ex_kr: "La proie a réussi à échapper aux chasseurs.", ex_zh: "獵物成功逃脫了獵人的追捕。" },
+            { id: 712, word: "revoir", meaning: "再見", ex_kr: "Revoir mon ami m'a rendu joyeux et heureux.", ex_zh: "再次見到朋友讓我感到無比高興和快樂。" },
+            { id: 713, word: "également", meaning: "還", ex_kr: "Tu es également mon meilleur ami.", ex_zh: "你也是我最好的朋友。" },
+            { id: 714, word: "folie", meaning: "瘋狂", ex_kr: "C'est la folie.", ex_zh: "這簡直是瘋了。" },
+            { id: 715, word: "samedi", meaning: "週六", ex_kr: "Pourriez-vous réfléchir à vous occuper de mes enfants samedi prochain ?", ex_zh: "您可以在下週六幫忙照顧一下我的孩子嗎？" },
+            { id: 716, word: "mode", meaning: "時尚", ex_kr: "Elle adore la mode et est toujours habillée élégamment.", ex_zh: "她熱愛時尚，總是穿著優雅得體。" },
+            { id: 717, word: "maire", meaning: "市長", ex_kr: "Il connaît le maire.", ex_zh: "他認識市長。" },
+            { id: 718, word: "inquiéter", meaning: "擔心", ex_kr: "Vous aviez raison de vous inquiéter.", ex_zh: "你的擔心是對的。" },
+            { id: 719, word: "recevoir", meaning: "收到", ex_kr: "Il est mieux de donner que de recevoir.", ex_zh: "施比受更有福。" },
+            { id: 720, word: "réel", meaning: "真實的", ex_kr: "C'est ici le monde réel.", ex_zh: "這就是現實世界。" },
+            { id: 721, word: "poids", meaning: "重量", ex_kr: "Elle prend du poids.", ex_zh: "她體重增加了。" },
+            { id: 722, word: "prévenir", meaning: "防止", ex_kr: "J'ai prévenu mon ami que je serais en retard.", ex_zh: "我事先告訴朋友我會遲到。" },
+            { id: 723, word: "suivant", meaning: "下列的", ex_kr: "Je lui ai dit de venir le jour suivant.", ex_zh: "我讓他第二天來。" },
+            { id: 724, word: "poche", meaning: "偷獵", ex_kr: "C'est dans la poche!", ex_zh: "勝券在握！" },
+            { id: 725, word: "vitesse", meaning: "速度", ex_kr: "La vitesse du vent est très élevée maintenant.", ex_zh: "現在風速非常大。" },
+            { id: 726, word: "fantôme", meaning: "鬼", ex_kr: "Es-tu un fantôme ?", ex_zh: "你是鬼魂嗎？" },
+            { id: 727, word: "viande", meaning: "肉", ex_kr: "Je mange beaucoup de viande.", ex_zh: "我吃很多肉。" },
+            { id: 728, word: "poulet", meaning: "雞", ex_kr: "Elle a acheté un poulet.", ex_zh: "她買了一隻雞。" },
+            { id: 729, word: "file", meaning: "文件", ex_kr: "Le directeur a ordonné aux enfants de se mettre en file.", ex_zh: "校長命令孩子們排成一列。" },
+            { id: 730, word: "abandonner", meaning: "放棄", ex_kr: "Je choisis de persévérer plutôt que d'abandonner.", ex_zh: "我選擇堅持不懈，而不是放棄。" },
+            { id: 731, word: "embrasser", meaning: "親吻", ex_kr: "Je veux vous embrasser.", ex_zh: "我想吻你。" },
+            { id: 732, word: "dimanche", meaning: "星期日", ex_kr: "Hier c'était dimanche, pas samedi.", ex_zh: "昨天是星期天，不是星期六。" },
+            { id: 733, word: "amusant", meaning: "有趣", ex_kr: "La fête était vraiment amusante.", ex_zh: "派對真的很有趣。" },
+            { id: 734, word: "cent", meaning: "百", ex_kr: "Tu as raison à cent pour cent.", ex_zh: "你說的完全正確。" },
+            { id: 735, word: "retraite", meaning: "退休", ex_kr: "Nous avons organisé une fête pour la retraite de notre collègue.", ex_zh: "我們為同事的退休舉辦了一場歡送會。" },
+            { id: 736, word: "étranger", meaning: "陌生人", ex_kr: "Elle est mariée à un étranger.", ex_zh: "她嫁給了一個外國人。" },
+            { id: 737, word: "paradis", meaning: "天堂", ex_kr: "Le sentier entre l'enfer et le paradis est étroit.", ex_zh: "地獄與天堂之間的道路很窄。" },
+            { id: 738, word: "directement", meaning: "直接地", ex_kr: "Je suis allé directement au lit.", ex_zh: "我直接上床睡覺了。" },
+            { id: 739, word: "champ", meaning: "場地", ex_kr: "Une clôture entoure le champ.", ex_zh: "田地周圍有圍籬。" },
+            { id: 740, word: "débarrasser", meaning: "擺脫", ex_kr: "De quoi puis-je me débarrasser ?", ex_zh: "我可以丟掉哪些東西？" },
+            { id: 741, word: "manquer", meaning: "錯過", ex_kr: "Il est rare que ma fille manque l'école.", ex_zh: "我女兒很少缺課。" },
+            { id: 742, word: "doigt", meaning: "手指", ex_kr: "Elle porte une bague au doigt.", ex_zh: "她手指上戴著一枚戒指。" },
+            { id: 743, word: "piège", meaning: "陷阱", ex_kr: "Cela pourrait être un piège.", ex_zh: "這可能是個陷阱。" },
+            { id: 744, word: "marque", meaning: "品牌", ex_kr: "Quelle est la marque?", ex_zh: "這是什麼品牌？" },
+            { id: 745, word: "perte", meaning: "損失", ex_kr: "J'ai signalé la perte de mon portefeuille à la police.", ex_zh: "我已向警方報案，表示錢包遺失。" },
+            { id: 746, word: "créer", meaning: "創造", ex_kr: "J'ai créé un profil sur un nouveau réseau social.", ex_zh: "我在一個新的社交網路上建立了一個個人資料。" },
+            { id: 747, word: "nettoyer", meaning: "清潔", ex_kr: "Il est temps de nettoyer ta chambre.", ex_zh: "該打掃房間了。" },
+            { id: 748, word: "note", meaning: "筆記", ex_kr: "Il a obtenu la note 15 sur 20 pour ça composition français.", ex_zh: "他的法文作文得了 20 分中的 15 分。" },
+            { id: 749, word: "franchement", meaning: "坦白說", ex_kr: "Il a parlé franchement de son passé.", ex_zh: "他坦誠地談到了自己的過去。" },
+            { id: 750, word: "bâtiment", meaning: "大樓", ex_kr: "Le nouveau bâtiment est énorme.", ex_zh: "新大樓非常龐大。" },
+            { id: 751, word: "heureusement", meaning: "幸運的是", ex_kr: "Heureusement, mon fils a été épargné par la maladie.", ex_zh: "幸運的是，我的兒子沒有罹患這種疾病。" },
+            { id: 752, word: "connaissance", meaning: "意識", ex_kr: "Ma sœur a une bonne connaissance du français.", ex_zh: "我姐姐法語很好。" },
+            { id: 753, word: "mensonge", meaning: "說謊", ex_kr: "Il a décidé de raconter un mensonge plutôt que de dire la vérité.", ex_zh: "他決定說謊而不是說真話。" },
+            { id: 754, word: "joindre", meaning: "加入", ex_kr: "Tu peux te joindre.", ex_zh: "你可以加入。" },
+            { id: 755, word: "convaincre", meaning: "說服", ex_kr: "C'est mon travail de vous convaincre.", ex_zh: "我的工作就是說服你。" },
+            { id: 756, word: "nerveux", meaning: "緊張的", ex_kr: "Je suis toujours très nerveux avant un examen.", ex_zh: "我每次考試前都會非常緊張。" },
+            { id: 757, word: "pantalon", meaning: "褲子", ex_kr: "Où est mon pantalon ?", ex_zh: "我的褲子在哪裡？" },
+            { id: 758, word: "douche", meaning: "淋浴", ex_kr: "Prends une douche !", ex_zh: "去洗個澡吧！" },
+            { id: 759, word: "bataille", meaning: "戰鬥", ex_kr: "Nous avons gagné la bataille.", ex_zh: "我們贏得了這場戰鬥。" },
+            { id: 760, word: "sentiment", meaning: "感覺", ex_kr: "Je me rappelle ce sentiment.", ex_zh: "我記得那種感覺。" },
+            { id: 761, word: "traitement", meaning: "治療", ex_kr: "Le patient a bien réagi au traitement.", ex_zh: "患者對治療反應良好。" },
+            { id: 762, word: "volonté", meaning: "將要", ex_kr: "Une équipe doit manifester la volonté de coopérer.", ex_zh: "團隊必須展現出合作意願。" },
+            { id: 763, word: "souci", meaning: "擔心", ex_kr: "J'ai oublié mes soucis après une journée à la plage.", ex_zh: "在海灘玩了一天后，我忘記了所有的煩惱。" },
+            { id: 764, word: "reposer", meaning: "休息", ex_kr: "Je pense que vous devriez vous reposer un moment.", ex_zh: "我覺得你應該休息一會兒。" },
+            { id: 765, word: "victoire", meaning: "勝利", ex_kr: "Le nouveau joueur a mené l'équipe à la victoire.", ex_zh: "新隊員帶領球隊取得了勝利。" },
+            { id: 766, word: "queue", meaning: "尾巴", ex_kr: "Il y avait une longue queue devant l'attraction touristique.", ex_zh: "旅遊景點前排起了長隊。" },
+            { id: 767, word: "désormais", meaning: "今後", ex_kr: "Désormais, c'est moi le roi.", ex_zh: "從今以後，我就是國王。" },
+            { id: 768, word: "paquet", meaning: "盒", ex_kr: "Ouvre le paquet.", ex_zh: "打開包裝。" },
+            { id: 769, word: "autrement", meaning: "否則", ex_kr: "Je pense autrement.", ex_zh: "我的想法不同。" },
+            { id: 770, word: "lancer", meaning: "丟", ex_kr: "Sais-tu lancer ?", ex_zh: "你會投擲嗎？" },
+            { id: 771, word: "infirmière", meaning: "護士", ex_kr: "L'infirmière a bandé le bras du patient.", ex_zh: "護士給病人包紮了手臂。" },
+            { id: 772, word: "métier", meaning: "工作", ex_kr: "Son métier est médecin.", ex_zh: "他的職業是醫生。" },
+            { id: 773, word: "bague", meaning: "戒指", ex_kr: "Je ne veux pas la bague.", ex_zh: "我不要這枚戒指。" },
+            { id: 774, word: "aveugle", meaning: "瞎的", ex_kr: "L'homme est aveugle.", ex_zh: "這個人是盲人。" },
+            { id: 775, word: "veste", meaning: "夾克", ex_kr: "Où est ma veste ?", ex_zh: "我的外套呢？" },
+            { id: 776, word: "propriétaire", meaning: "擁有者", ex_kr: "Qui est le propriétaire de cette maison ?", ex_zh: "這房子是誰的？" },
+            { id: 777, word: "fuir", meaning: "逃跑", ex_kr: "Le bruit a fait fuir tous les animaux.", ex_zh: "噪音嚇跑了所有的動物。" },
+            { id: 778, word: "oiseau", meaning: "鳥", ex_kr: "Cet oiseau sait voler.", ex_zh: "這隻鳥會飛。" },
+            { id: 779, word: "retirer", meaning: "提取", ex_kr: "Il a retiré la clé de la serrure.", ex_zh: "他把鑰匙從鎖裡拔了出來。" },
+            { id: 780, word: "récemment", meaning: "最近", ex_kr: "Le musée a récemment modernisé son système de sécurité.", ex_zh: "博物館最近升級了安保系統。" },
+            { id: 781, word: "célèbre", meaning: "著名的", ex_kr: "Ce type est célèbre.", ex_zh: "這個人很有名。" },
+            { id: 782, word: "fiston", meaning: "兒子", ex_kr: "Mon fiston a six ans.", ex_zh: "我兒子六歲了。" },
+            { id: 783, word: "vert", meaning: "綠色的", ex_kr: "Le vert te va bien.", ex_zh: "綠色很適合你。" },
+            { id: 784, word: "assurance", meaning: "保險", ex_kr: "Ma voiture est couverte par mon assurance.", ex_zh: "我的車在保險範圍內。" },
+            { id: 785, word: "charmant", meaning: "迷人", ex_kr: "C'est charmant.", ex_zh: "它很迷人。" },
+            { id: 786, word: "chemise", meaning: "襯衫", ex_kr: "Elle lui a acheté une chemise à porter à la fête.", ex_zh: "她買了一件襯衫，讓他穿去參加派對。" },
+            { id: 787, word: "ventre", meaning: "腹部", ex_kr: "Elle dort sur le ventre.", ex_zh: "她趴著睡。" },
+            { id: 788, word: "atteindre", meaning: "抵達", ex_kr: "L'alpiniste a atteint le sommet de la montagne.", ex_zh: "登山者登上了山頂。" },
+            { id: 789, word: "virer", meaning: "轉動", ex_kr: "Tu dois virer la nouvelle standardiste..", ex_zh: "你需要解僱新來的前台接待員。" },
+            { id: 790, word: "pluie", meaning: "雨", ex_kr: "Le niveau de l'eau était monté après la pluie.", ex_zh: "雨後水位漲了。" },
+            { id: 791, word: "couche", meaning: "層", ex_kr: "Une couche de givre recouvrait les fleurs.", ex_zh: "花朵上覆蓋著一層霜。" },
+            { id: 792, word: "voleur", meaning: "賊", ex_kr: "Je sais qui est le voleur.", ex_zh: "我知道誰是小偷。" },
+            { id: 793, word: "réveiller", meaning: "喚醒", ex_kr: "Je réveille mes enfants tôt tous les matins.", ex_zh: "我每天早上都很早就叫醒孩子們。" },
+            { id: 794, word: "souris", meaning: "老鼠", ex_kr: "Le chat a mangé la souris.", ex_zh: "貓吃了老鼠。" },
+            { id: 795, word: "ombre", meaning: "陰影", ex_kr: "Il a peur de son ombre.", ex_zh: "他膽小如鼠。" },
+            { id: 796, word: "repos", meaning: "休息", ex_kr: "Le repos est important.", ex_zh: "休息很重要。" },
+            { id: 797, word: "blesser", meaning: "傷害", ex_kr: "Vous pourriez vous blesser.", ex_zh: "你可能會受傷。" },
+            { id: 798, word: "neige", meaning: "雪", ex_kr: "Ce matin, le sol était couvert de neige.", ex_zh: "今天早上，地面上覆蓋著積雪。" },
+            { id: 799, word: "lundi", meaning: "週一", ex_kr: "Je serai là-bas lundi soir.", ex_zh: "我周一晚上會到那裡。" },
+            { id: 800, word: "permettre", meaning: "允許", ex_kr: "Je refuse de le permettre.", ex_zh: "我絕不允許這種情況發生。" },
+            { id: 801, word: "surveiller", meaning: "觀看", ex_kr: "Pouvez-vous rester et surveiller les enfants ?", ex_zh: "你能留下來照顧孩子嗎？" },
+            { id: 802, word: "chaise", meaning: "椅子", ex_kr: "Le chien est sur la chaise.", ex_zh: "狗在椅子上。" },
+            { id: 803, word: "hâte", meaning: "匆忙", ex_kr: "J'ai hâte de voir le dernier épisode de cette série.", ex_zh: "我很期待看到這部劇的最後一集。" },
+            { id: 804, word: "véritable", meaning: "真的", ex_kr: "Je veux trouver le véritable amour.", ex_zh: "我想找到真愛。" },
+            { id: 805, word: "siège", meaning: "座位", ex_kr: "Tu es assis dans mon siège.", ex_zh: "你坐在我的座位。" },
+            { id: 806, word: "traduction", meaning: "翻譯", ex_kr: "J'ai choisi la traduction du mot la plus appropriée.", ex_zh: "我選擇了最恰當的翻譯。" },
+            { id: 807, word: "montagne", meaning: "山", ex_kr: "Sa maison est au pied de la montagne.", ex_zh: "他的房子在山腳下。" },
+            { id: 808, word: "gorge", meaning: "喉", ex_kr: "Une tasse de thé calmera ton mal de gorge.", ex_zh: "喝杯茶可以緩解喉嚨痛。" },
+            { id: 809, word: "sommeil", meaning: "睡覺", ex_kr: "Le bruit de la rue n'a pas troublé mon sommeil.", ex_zh: "街上的噪音並沒有影響我的睡眠。" },
+            { id: 810, word: "rivière", meaning: "河", ex_kr: "Allons manger au bord de la rivière.", ex_zh: "我們去河邊吃飯吧。" },
+            { id: 811, word: "crayon", meaning: "鉛筆", ex_kr: "Il a placé son crayon derrière l'oreille.", ex_zh: "他把鉛筆別在耳朵後面。" },
+            { id: 812, word: "sembler", meaning: "似乎", ex_kr: "Le nouveau médicament semble être très efficace.", ex_zh: "這種新藥似乎非常有效。" },
+            { id: 813, word: "titre", meaning: "標題", ex_kr: "Le titre d'un article doit attirer l'attention du lecteur.", ex_zh: "文章標題必須能夠吸引讀者的注意。" },
+            { id: 814, word: "ours", meaning: "熊", ex_kr: "Les loups et les ours sont des animaux sauvages.", ex_zh: "狼和熊都是野生動物。" },
+            { id: 815, word: "lunettes", meaning: "眼鏡", ex_kr: "Avec ces lunettes, je vois bien mieux.", ex_zh: "戴上這副眼鏡，我的視力好多了。" },
+            { id: 816, word: "exploser", meaning: "霹靂", ex_kr: "Ça va exploser !", ex_zh: "它要爆炸了！" },
+            { id: 817, word: "évident", meaning: "明顯的", ex_kr: "C'était évident.", ex_zh: "這顯而易見。" },
+            { id: 818, word: "examen", meaning: "考試", ex_kr: "Hier, j'ai passé un examen à l'école.", ex_zh: "昨天我在學校參加了考試。" },
+            { id: 819, word: "respirer", meaning: "呼吸", ex_kr: "L'air que nous respirons est invisible.", ex_zh: "我們呼吸的空氣是看不見的。" },
+            { id: 820, word: "plat", meaning: "平坦的", ex_kr: "Le plat du jour est du poisson.", ex_zh: "今日特色菜是魚。" },
+            { id: 821, word: "survivre", meaning: "存活", ex_kr: "Je peux survivre à ça.", ex_zh: "我能撐過去。" },
+            { id: 822, word: "auprès", meaning: "和", ex_kr: "Quand je suis auprès de toi, je me sens bien.", ex_zh: "和你在一起的時候，我感覺很好。" },
+            { id: 823, word: "forêt", meaning: "森林", ex_kr: "La route passe par la forêt.", ex_zh: "這條路穿過森林。" },
+            { id: 824, word: "amitié", meaning: "友誼", ex_kr: "La confiance est le fondement de l'amitié.", ex_zh: "信任是友誼的基礎。" },
+            { id: 825, word: "blessure", meaning: "受傷", ex_kr: "Elle est celle qui a pris soin de sa blessure.", ex_zh: "是她負責處理他的傷勢。" },
+            { id: 826, word: "humeur", meaning: "情緒", ex_kr: "Je vois que tu es de bonne humeur.", ex_zh: "我看得出來你心情不錯。" },
+            { id: 827, word: "puissance", meaning: "力量", ex_kr: "La puissance fait le droit.", ex_zh: "權力使人正確。" },
+            { id: 828, word: "casser", meaning: "打破", ex_kr: "Vous allez le casser si vous ne faites pas attention.", ex_zh: "如果你不小心，你會把它弄壞的。" },
+            { id: 829, word: "crier", meaning: "喊", ex_kr: "Tu n'as pas besoin de crier.", ex_zh: "你不需要大聲喊叫。" },
+            { id: 830, word: "pousser", meaning: "推", ex_kr: "Pourrais-tu pousser la porte pour l'ouvrir ?", ex_zh: "你能把門推開嗎？" },
+            { id: 831, word: "gare", meaning: "車站", ex_kr: "Je pris un taxi pour la gare.", ex_zh: "我搭計程車去了火車站。" },
+            { id: 832, word: "midi", meaning: "中午", ex_kr: "Il vient à midi.", ex_zh: "他中午到達。" },
+            { id: 833, word: "dessous", meaning: "以下", ex_kr: "Le nom du tableau est écrit dessous.", ex_zh: "畫作名稱寫在下面。" },
+            { id: 834, word: "annonce", meaning: "公告", ex_kr: "La maison correspond à la description dans l'annonce.", ex_zh: "房子與廣告描述相符。" },
+            { id: 835, word: "oreille", meaning: "耳朵", ex_kr: "Les éléphants ont de très grandes oreilles.", ex_zh: "大象的耳朵很大。" },
+            { id: 836, word: "usine", meaning: "工廠", ex_kr: "Mon père travaille dans une usine.", ex_zh: "我父親在工廠工作。" },
+            { id: 837, word: "nombreux", meaning: "許多", ex_kr: "Les belles plages sont nombreuses dans la région.", ex_zh: "該地區有很多美麗的海灘。" },
+            { id: 838, word: "vache", meaning: "乳牛", ex_kr: "La vache nous donne du lait.", ex_zh: "乳牛給我們提供牛奶。" },
+            { id: 839, word: "prudent", meaning: "小心", ex_kr: "Je serai plus prudent.", ex_zh: "我會更加小心。" },
+            { id: 840, word: "épée", meaning: "劍", ex_kr: "Donne-moi ton épée.", ex_zh: "把你的劍給我。" },
+            { id: 841, word: "sage", meaning: "明智的", ex_kr: "Elle est très sage.", ex_zh: "她非常睿智。" },
+            { id: 842, word: "libérer", meaning: "發布", ex_kr: "Le détenu a été libéré la semaine dernière.", ex_zh: "這名囚犯上週獲釋。" },
+            { id: 843, word: "tuer", meaning: "殺", ex_kr: "Le chevalier a tué son adversaire pendant la bataille.", ex_zh: "騎士在戰鬥中殺死了他的對手。" },
+            { id: 844, word: "château", meaning: "城堡", ex_kr: "Il y a un château dans ma ville.", ex_zh: "我所在的城鎮裡有一座城堡。" },
+            { id: 845, word: "fer", meaning: "鐵", ex_kr: "Mon marteau est en fer.", ex_zh: "我的錘子是鐵製的。" },
+            { id: 846, word: "réellement", meaning: "真的", ex_kr: "Sont-elles réellement amies ?", ex_zh: "他們真的是朋友嗎？" },
+            { id: 847, word: "côte", meaning: "邊", ex_kr: "Je suis de la côte Ouest.", ex_zh: "我來自西海岸。" },
+            { id: 848, word: "quiconque", meaning: "任何人", ex_kr: "Nous ne devons pas juger quiconque.", ex_zh: "我們不應該評判任何人。" },
+            { id: 849, word: "délicieux", meaning: "可口的", ex_kr: "Le gâteau est délicieux.", ex_zh: "蛋糕很好吃。" },
+            { id: 850, word: "chaleur", meaning: "熱", ex_kr: "Je me rappelle la chaleur de ses bras.", ex_zh: "我記得他臂彎裡的溫暖。" },
+            { id: 851, word: "essence", meaning: "本質", ex_kr: "Ma petite voiture ne consomme pas beaucoup d'essence.", ex_zh: "我的小車不怎麼耗油。" },
+            { id: 852, word: "soutien", meaning: "支援", ex_kr: "Le candidat a obtenu le soutien de son parti.", ex_zh: "該候選人獲得了黨內支持。" },
+            { id: 853, word: "traiter", meaning: "治療", ex_kr: "Je sais comment traiter une dame.", ex_zh: "我知道如何對待女士。" },
+            { id: 854, word: "herbe", meaning: "草", ex_kr: "J'aime bien regarder mes chats jouer dans l'herbe.", ex_zh: "我喜歡看我的貓在草地上玩耍。" },
+            { id: 855, word: "traverser", meaning: "穿過", ex_kr: "Elle a aidé le vieil homme à traverser la rue.", ex_zh: "她扶著老人過了馬路。" },
+            { id: 856, word: "menteur", meaning: "說謊者", ex_kr: "Ton père est le pire menteur au monde.", ex_zh: "你父親是世界上最糟糕的說謊者。" },
+            { id: 857, word: "sombre", meaning: "黑暗的", ex_kr: "Le ciel était très sombre.", ex_zh: "天非常黑。" },
+            { id: 858, word: "bosser", meaning: "工作", ex_kr: "J'adore bosser ici.", ex_zh: "我喜歡在這裡工作。" },
+            { id: 859, word: "puissant", meaning: "強大的", ex_kr: "On dit que ce canon est très puissant.", ex_zh: "據說這門大砲威力非常大。" },
+            { id: 860, word: "cependant", meaning: "然而", ex_kr: "Mon train a du retard. Cependant, j'arriverai assez tôt.", ex_zh: "我的火車晚點了。不過，我會比較早到達。" },
+            { id: 861, word: "construire", meaning: "建造", ex_kr: "Je construis un château de sable avec mes enfants.", ex_zh: "我和孩子們正在堆沙堡。" },
+            { id: 862, word: "agence", meaning: "機構", ex_kr: "Je travaille pour une agence de voyage.", ex_zh: "我在旅行社工作。" },
+            { id: 863, word: "lendemain", meaning: "第二天", ex_kr: "Le lendemain, la neige avait recouvert la ville entière.", ex_zh: "第二天，整個城市都被白雪覆蓋了。" },
+            { id: 864, word: "disparaître", meaning: "消失", ex_kr: "Tu dois disparaître.", ex_zh: "你必須消失。" },
+            { id: 865, word: "fumer", meaning: "吸煙", ex_kr: "Le vieil homme fume une pipe.", ex_zh: "老人正在抽煙鬥。" },
+            { id: 866, word: "horloge", meaning: "鐘", ex_kr: "Regarde l'horloge.", ex_zh: "看看鐘。" },
+            { id: 867, word: "maintenir", meaning: "維持", ex_kr: "Le capitaine a maintenu l'ordre à bord du navire.", ex_zh: "船長維持了船上的秩序。" },
+            { id: 868, word: "souffrir", meaning: "遭受", ex_kr: "Elles vont toutes souffrir de cette décision.", ex_zh: "他們都會為此決定付出代價。" },
+            { id: 869, word: "fromage", meaning: "起司", ex_kr: "Je voudrais un morceau de fromage.", ex_zh: "我想要一塊起司。" },
+            { id: 870, word: "piscine", meaning: "水池", ex_kr: "La piscine est pleine.", ex_zh: "泳池滿了。" },
+            { id: 871, word: "billet", meaning: "票", ex_kr: "Elle a eu le billet pour rien.", ex_zh: "她白得了一張罰單。" },
+            { id: 872, word: "résoudre", meaning: "解決", ex_kr: "Mais il reste évidemment des problèmes à résoudre.", ex_zh: "但顯然還有一些問題需要解決。" },
+            { id: 873, word: "chair", meaning: "肉", ex_kr: "Ce poisson a une chair très tendre ; il est délicieux.", ex_zh: "這種魚肉質非常鮮嫩，味道鮮美。" },
+            { id: 874, word: "résultat", meaning: "結果", ex_kr: "On verra le résultat.", ex_zh: "我們拭目以待。" },
+            { id: 875, word: "taire", meaning: "沉默", ex_kr: "Tu peux te taire.", ex_zh: "你可以保持安靜。" },
+            { id: 876, word: "déranger", meaning: "打擾", ex_kr: "Le garçon n'a pas voulu déranger sa mère au travail.", ex_zh: "男孩不想打擾母親上班。" },
+            { id: 877, word: "concours", meaning: "競賽", ex_kr: "Elle a gagné le concours de chant.", ex_zh: "她贏得了歌唱比賽。" },
+            { id: 878, word: "crâne", meaning: "顱骨", ex_kr: "Laissez-moi ouvrir son crâne et mesurer son cerveau.", ex_zh: "讓我打開他的頭骨，測量一下他的大腦。" },
+            { id: 879, word: "élevé", meaning: "瞳孔", ex_kr: "Le prix de cette voiture est très élevé.", ex_zh: "這輛車的價格非常高。" },
+            { id: 880, word: "laver", meaning: "洗", ex_kr: "Tu dois te laver les mains.", ex_zh: "你需要洗手。" },
+            { id: 881, word: "jaloux", meaning: "嫉妒的", ex_kr: "Ils sont jaloux de nous.", ex_zh: "他們嫉妒我們。" },
+            { id: 882, word: "enfance", meaning: "童年", ex_kr: "Son enfance était dure.", ex_zh: "他的童年很艱苦。" },
+            { id: 883, word: "chouette", meaning: "貓頭鷹", ex_kr: "Sa voiture est vraiment chouette.", ex_zh: "他的車真酷。" },
+            { id: 884, word: "profiter", meaning: "享受", ex_kr: "Profitez du soleil.", ex_zh: "享受陽光吧。" },
+            { id: 885, word: "caisse", meaning: "盒子", ex_kr: "La caisse était pleine de livres.", ex_zh: "箱子裡裝滿了書。" },
+            { id: 886, word: "gaffe", meaning: "錯誤", ex_kr: "Il était gêné par sa gaffe à la soirée.", ex_zh: "他在聚會上犯了錯誤，感到很尷尬。" },
+            { id: 887, word: "poitrine", meaning: "胸部", ex_kr: "La femme tient son bébé contre sa poitrine.", ex_zh: "女人將嬰兒緊緊抱在胸前。" },
+            { id: 888, word: "sucre", meaning: "糖", ex_kr: "Il aime le café sans sucre.", ex_zh: "他喜歡喝不加糖的咖啡。" },
+            { id: 889, word: "siècle", meaning: "世紀", ex_kr: "L'histoire de cette ville couvre quatre siècles.", ex_zh: "這座城市的歷史可以追溯到四個世紀以前。" },
+            { id: 890, word: "geste", meaning: "手勢", ex_kr: "J'apprécie le geste.", ex_zh: "感謝你的好意。" },
+            { id: 891, word: "étudier", meaning: "學習", ex_kr: "Tu dois étudier pendant toute ta vie.", ex_zh: "你必須終身學習。" },
+            { id: 892, word: "forcément", meaning: "一定", ex_kr: "L'ethnicité n'est pas forcément la même chose que la nationalité.", ex_zh: "種族不一定等同於國籍。" },
+            { id: 893, word: "cloche", meaning: "鐘", ex_kr: "Je dois partir quand la cloche sonne.", ex_zh: "鈴響的時候我就得走了。" },
+            { id: 894, word: "chute", meaning: "落下", ex_kr: "L'alpiniste a survécu à sa chute.", ex_zh: "登山者墜落後倖存了下來。" },
+            { id: 895, word: "joueur", meaning: "玩家", ex_kr: "Il est le meilleur joueur de notre équipe.", ex_zh: "他是我們隊上最好的球員。" },
+            { id: 896, word: "peinture", meaning: "畫", ex_kr: "Il adore la peinture.", ex_zh: "他熱愛繪畫。" },
+            { id: 897, word: "tenue", meaning: "全套服裝", ex_kr: "Elle va aussi choisir ma tenue.", ex_zh: "她還要幫我挑選衣服。" },
+            { id: 898, word: "marine", meaning: "海洋", ex_kr: "Mon père était dans la Marine.", ex_zh: "我父親曾在海軍服役。" },
+            { id: 899, word: "plainte", meaning: "抱怨", ex_kr: "Nous avons eu une plainte.", ex_zh: "我們收到了一份投訴。" },
+            { id: 900, word: "foyer", meaning: "爐", ex_kr: "Je vis dans un foyer heureux.", ex_zh: "我生活在一個幸福的家庭裡。" },
+            { id: 901, word: "manteau", meaning: "外套", ex_kr: "Il me faut un manteau.", ex_zh: "我需要一件外套。" },
+            { id: 902, word: "incendie", meaning: "火", ex_kr: "Il a risqué sa vie pour sauver sa famille de l'incendie.", ex_zh: "他冒著生命危險從火災中救出了家人。" },
+            { id: 903, word: "mener", meaning: "執行", ex_kr: "Je veux simplement mener une vie normale.", ex_zh: "我只想過正常的生活。" },
+            { id: 904, word: "cauchemar", meaning: "惡夢", ex_kr: "Peut-être que c'était juste un cauchemar.", ex_zh: "也許那隻是一場惡夢。" },
+            { id: 905, word: "prêtre", meaning: "牧師", ex_kr: "Le prêtre qui parle français sera là la semaine prochaine.", ex_zh: "那位會說法語的神父下週會來這裡。" },
+            { id: 906, word: "lapin", meaning: "兔子", ex_kr: "Les lapins peuvent digérer tous les légumes.", ex_zh: "兔子可以消化所有蔬菜。" },
+            { id: 907, word: "scientifique", meaning: "科學家", ex_kr: "C'est un grand scientifique, rapide, imaginatif et ambitieux.", ex_zh: "他是一位傑出的科學家，思維敏捷，富有想像力，而且雄心勃勃。" },
+            { id: 908, word: "corde", meaning: "繩索", ex_kr: "Tenez la corde.", ex_zh: "抓住繩子。" },
+            { id: 909, word: "propriété", meaning: "財產", ex_kr: "C'est une propriété privée.", ex_zh: "這是私人財產。" },
+            { id: 910, word: "deviner", meaning: "猜測", ex_kr: "Devine qui a gagné.", ex_zh: "猜猜誰贏了。" },
+            { id: 911, word: "hiver", meaning: "冬天", ex_kr: "L'hiver arrive bientôt.", ex_zh: "冬天快要來了。" },
+            { id: 912, word: "jus", meaning: "汁", ex_kr: "Bois ce jus !", ex_zh: "喝這個果汁！" },
+            { id: 913, word: "couloir", meaning: "走廊", ex_kr: "Le bureau du directeur est au fond du couloir.", ex_zh: "主任辦公室在走廊盡頭。" },
+            { id: 914, word: "poupée", meaning: "玩具娃娃", ex_kr: "Je lui ai acheté une poupée.", ex_zh: "我買了一個娃娃給她。" },
+            { id: 915, word: "admettre", meaning: "承認", ex_kr: "Je dois admettre que je n'en ai jamais entendu parler.", ex_zh: "我必須承認，我以前從未聽過。" },
+            { id: 916, word: "foule", meaning: "人群", ex_kr: "Il a disparu dans la foule.", ex_zh: "他消失在人群中。" },
+            { id: 917, word: "réseau", meaning: "網路", ex_kr: "À l'école, tous les ordinateurs sont sur le même réseau.", ex_zh: "在學校裡，所有電腦都連接在同一個網路上。" },
+            { id: 918, word: "entraînement", meaning: "訓練", ex_kr: "L'entraînement m'a permis d'améliorer ma performance.", ex_zh: "訓練使我的表現得到了提升。" },
+            { id: 919, word: "pardonner", meaning: "原諒", ex_kr: "Mon patron a pardonné mon retard.", ex_zh: "老闆原諒了我遲到。" },
+            { id: 920, word: "ascenseur", meaning: "電梯", ex_kr: "Nous pouvons prendre l'ascenseur jusqu'au troisième étage.", ex_zh: "我們可以搭電梯到三樓。" },
+            { id: 921, word: "liaison", meaning: "聯繫", ex_kr: "Le modem a établi une liaison avec le réseau.", ex_zh: "數據機已與網路建立連線。" },
+            { id: 922, word: "traîner", meaning: "掛出", ex_kr: "Mon fils a traîné sa grande valise.", ex_zh: "我兒子拖著他的大行李箱。" },
+            { id: 923, word: "vélo", meaning: "自行車", ex_kr: "Pour ton anniversaire, je te donnerai un vélo.", ex_zh: "你生日的時候，我送你一輛腳踏車。" },
+            { id: 924, word: "anneau", meaning: "戒指", ex_kr: "Il portait plusieurs anneaux en or à la main gauche.", ex_zh: "他左手戴著好幾枚金戒指。" },
+            { id: 925, word: "coopérer", meaning: "合作", ex_kr: "Nous serons heureux de coopérer.", ex_zh: "我們樂意合作。" },
+            { id: 926, word: "estomac", meaning: "胃", ex_kr: "Mon estomac est vide.", ex_zh: "我肚子空空的。" },
+            { id: 927, word: "répéter", meaning: "重複", ex_kr: "Répète après moi.", ex_zh: "請跟我重複。" },
+            { id: 928, word: "curieux", meaning: "好奇的", ex_kr: "Je dois admettre que je suis curieux.", ex_zh: "我必須承認，我很好奇。" },
+            { id: 929, word: "mardi", meaning: "週二", ex_kr: "Le mardi, je vais à la gym.", ex_zh: "星期二，我去健身房。" },
+            { id: 930, word: "soudain", meaning: "突然", ex_kr: "Son succès soudain n'est pas un hasard.", ex_zh: "他的突然成功並非偶然。" },
+            { id: 931, word: "ballon", meaning: "球", ex_kr: "Tiens le ballon des deux mains.", ex_zh: "雙手握住球。" },
+            { id: 932, word: "combattre", meaning: "戰鬥", ex_kr: "Je veux combattre.", ex_zh: "我想戰鬥。" },
+            { id: 933, word: "bouton", meaning: "按鈕", ex_kr: "Vous pouvez régler le volume avec ce bouton.", ex_zh: "你可以用這個按鈕調整音量。" },
+            { id: 934, word: "tâche", meaning: "弄髒", ex_kr: "Ça a été la tâche la plus difficile de ma vie.", ex_zh: "這是我一生中最艱難的任務。" },
+            { id: 935, word: "réussir", meaning: "成功", ex_kr: "Elle est sûre de réussir.", ex_zh: "她確信自己會成功。" },
+            { id: 936, word: "conseiller", meaning: "建議", ex_kr: "Un groupe d'experts conseille le gouvernement.", ex_zh: "一群專家正在為政府提供諮詢。" },
+            { id: 937, word: "brûler", meaning: "燒傷", ex_kr: "J'ai utilisé une allumette pour brûler le papier.", ex_zh: "我用火柴燒了那張紙。" },
+            { id: 938, word: "rater", meaning: "錯過", ex_kr: "J'ai raté l'examen.", ex_zh: "我考試不及格。" },
+            { id: 939, word: "gloire", meaning: "榮耀", ex_kr: "Ce monument magnifique est la gloire de la ville.", ex_zh: "這座宏偉的紀念碑是這座城市的驕傲。" },
+            { id: 940, word: "nana", meaning: "女孩", ex_kr: "Je sais que tu as une nana.", ex_zh: "我知道你有女朋友。" },
+            { id: 941, word: "lourd", meaning: "重的", ex_kr: "Ne penses-tu pas que ça pourrait être un peu lourd ?", ex_zh: "你不覺得這有點太重了嗎？" },
+            { id: 942, word: "remplacer", meaning: "代替", ex_kr: "Je peux le remplacer.", ex_zh: "我可以更換它。" },
+            { id: 943, word: "affreux", meaning: "可怕", ex_kr: "Elle a peint sa maison d'un vert affreux.", ex_zh: "她把房子漆成了難看的綠色。" },
+            { id: 944, word: "enterrement", meaning: "葬禮", ex_kr: "Beaucoup de chefs d'État sont venus à l'enterrement du roi.", ex_zh: "許多國家元首出席了國王的葬禮。" },
+            { id: 945, word: "tapis", meaning: "地毯", ex_kr: "Le tapis de ma chambre est vert.", ex_zh: "我房間的地毯是綠色的。" },
+            { id: 946, word: "tenter", meaning: "嘗試", ex_kr: "Je vais tenter le coup.", ex_zh: "我打算試試看。" },
+            { id: 947, word: "réaliser", meaning: "意識到", ex_kr: "Notre équipe a réalisé le meilleur score aujourd'hui.", ex_zh: "我們團隊今天取得了最高分。" },
+            { id: 948, word: "lâcher", meaning: "鬆手", ex_kr: "J'ai lâché le ballon.", ex_zh: "我失職了。" },
+            { id: 949, word: "baisse", meaning: "降低", ex_kr: "Nous avons remarqué une baisse de la productivité.", ex_zh: "我們注意到生產效率有所下降。" },
+            { id: 950, word: "venger", meaning: "復仇", ex_kr: "Il a provoqué son ennemi en duel pour venger le roi.", ex_zh: "為了替國王報仇，他向敵人發動決鬥挑戰。" },
+            { id: 951, word: "poursuivre", meaning: "追求", ex_kr: "Les deux entreprises poursuivent un objectif commun.", ex_zh: "兩家公司擁有共同的目標。" },
+            { id: 952, word: "loup", meaning: "狼", ex_kr: "Est-ce un loup ?", ex_zh: "它是狼嗎？" },
+            { id: 953, word: "navire", meaning: "船", ex_kr: "Le capitaine contrôle tout le navire.", ex_zh: "船長控制整艘船。" },
+            { id: 954, word: "fleur", meaning: "花", ex_kr: "C'est une fleur tellement belle !", ex_zh: "這朵花真漂亮！" },
+            { id: 955, word: "pratique", meaning: "實際的", ex_kr: "C'était pratique.", ex_zh: "很方便。" },
+            { id: 956, word: "jeudi", meaning: "週四", ex_kr: "Jeudi est le quatrième jour de la semaine de travail.", ex_zh: "星期四是一週的第四天。" },
+            { id: 957, word: "célibataire", meaning: "單身的", ex_kr: "Il est jeune et célibataire.", ex_zh: "他年輕單身。" },
+            { id: 958, word: "attirer", meaning: "吸引", ex_kr: "La nuit, la lumière attire des insectes.", ex_zh: "夜間，燈光會吸引昆蟲。" },
+            { id: 959, word: "étonnant", meaning: "驚人的", ex_kr: "Le scientifique a trouvé les résultats de l'expérience étonnants.", ex_zh: "這位科學家發現實驗結果令人震驚。" },
+            { id: 960, word: "rythme", meaning: "步伐", ex_kr: "La société évolue à un rythme sans précédent.", ex_zh: "社會正以前所未有的速度發展。" },
+            { id: 961, word: "tempête", meaning: "風暴", ex_kr: "La tempête a fait arrêter le train.", ex_zh: "暴風雨導致火車停了下來。" },
+            { id: 962, word: "lutte", meaning: "鬥爭", ex_kr: "Je soutiens la lutte contre la pauvreté.", ex_zh: "我支持消除貧窮的鬥爭。" },
+            { id: 963, word: "accompagner", meaning: "伴隨", ex_kr: "Je vais vous accompagner.", ex_zh: "我會陪你一起去。" },
+            { id: 964, word: "ceinture", meaning: "腰帶", ex_kr: "Je boucle toujours ma ceinture de sécurité dans la voiture.", ex_zh: "我開車時總是繫好安全帶。" },
+            { id: 965, word: "personnage", meaning: "特點", ex_kr: "Il y a trop de personnages dans le livre.", ex_zh: "這本書裡的人物太多了。" },
+            { id: 966, word: "mars", meaning: "行進", ex_kr: "Mars est le troisième mois de l'année.", ex_zh: "三月是每年的第三個月。" },
+            { id: 967, word: "vingt", meaning: "二十", ex_kr: "Je dois faire cuire le gâteau au four pendant vingt minutes.", ex_zh: "我需要把蛋糕放進烤箱烤二十分鐘。" },
+            { id: 968, word: "collier", meaning: "項鍊", ex_kr: "L'actrice portait un beau collier de diamant.", ex_zh: "這位女演員戴著一條漂亮的鑽石項鍊。" },
+            { id: 969, word: "canapé", meaning: "長椅", ex_kr: "Je me suis réveillé sur le canapé.", ex_zh: "我醒來時發現自己躺在沙發上。" },
+            { id: 970, word: "nourrir", meaning: "餵食", ex_kr: "Il nourrit souvent son chat avec du poisson.", ex_zh: "他常常餵他的鯰魚。" },
+            { id: 971, word: "singe", meaning: "猴", ex_kr: "As-tu déjà vu un singe?", ex_zh: "你見過猴子嗎？" },
+            { id: 972, word: "pêche", meaning: "釣魚", ex_kr: "Avez-vous un bateau de pêche ?", ex_zh: "你擁有一艘漁船嗎？" },
+            { id: 973, word: "haine", meaning: "恨", ex_kr: "La haine prend souvent sa source dans l'ignorance.", ex_zh: "仇恨往往源自於無知。" },
+            { id: 974, word: "tromper", meaning: "欺騙", ex_kr: "Son apparence et son charme ont trompé beaucoup de gens.", ex_zh: "她的外表和魅力欺騙了許多人。" },
+            { id: 975, word: "pis", meaning: "更糟", ex_kr: "Les choses allèrent de mal en pis.", ex_zh: "情況變得越來越糟。" },
+            { id: 976, word: "écran", meaning: "螢幕", ex_kr: "Les instructions à l'écran sont lisibles et claires.", ex_zh: "螢幕上的指示清晰易讀。" },
+            { id: 977, word: "miel", meaning: "蜂蜜", ex_kr: "J'aime le miel.", ex_zh: "我喜歡蜂蜜。" },
+            { id: 978, word: "malheur", meaning: "不幸", ex_kr: "Quel malheur !", ex_zh: "真是場災難！" },
+            { id: 979, word: "arme", meaning: "武裝", ex_kr: "Je sais que vous avez une arme.", ex_zh: "我知道你有武器。" },
+            { id: 980, word: "cerveau", meaning: "腦", ex_kr: "Les mots croisés sont très stimulants pour le cerveau.", ex_zh: "填字遊戲對大腦非常有刺激作用。" },
+            { id: 981, word: "explication", meaning: "解釋", ex_kr: "Je veux une explication.", ex_zh: "我需要解釋。" },
+            { id: 982, word: "vierge", meaning: "處女", ex_kr: "J'ai pris des notes sur une feuille vierge.", ex_zh: "我在一張白紙上做了筆記。" },
+            { id: 983, word: "palais", meaning: "宮殿", ex_kr: "Le roi vit dans un palais.", ex_zh: "國王住在宮殿裡。" },
+            { id: 984, word: "identifier", meaning: "確認", ex_kr: "Pouvez-vous les identifier ?", ex_zh: "你能認出它們嗎？" },
+            { id: 985, word: "gâcher", meaning: "劇透", ex_kr: "Ne gâche pas ma fête.", ex_zh: "別破壞我的派對。" },
+            { id: 986, word: "lent", meaning: "慢的", ex_kr: "Mon frère marche vite, mais ma sœur est lente.", ex_zh: "我哥哥走路很快，但我妹妹走路很慢。" },
+            { id: 987, word: "élève", meaning: "瞳孔", ex_kr: "Vous êtes un bon élève, mais vous avez encore beaucoup à apprendre.", ex_zh: "你是個好學生，但你還有很多東西要學。" },
+            { id: 988, word: "monnaie", meaning: "現金", ex_kr: "Je garde ma petite monnaie.", ex_zh: "我把零錢留下來了。" },
+            { id: 989, word: "davantage", meaning: "任何進一步", ex_kr: "Il voulait en savoir davantage sur les fleurs.", ex_zh: "他想了解更多關於花卉的知識。" },
+            { id: 990, word: "roman", meaning: "小說", ex_kr: "Son dernier roman est une histoire d'amour.", ex_zh: "他的最新小說是一部愛情故事。" },
+            { id: 991, word: "soif", meaning: "渴", ex_kr: "Je vais mourir de soif.", ex_zh: "我要渴死了。" },
+            { id: 992, word: "étoile", meaning: "星星", ex_kr: "Le soleil est une étoile.", ex_zh: "太陽是一顆恆星。" },
+            { id: 993, word: "concentrer", meaning: "重點", ex_kr: "Tu dois te concentrer.", ex_zh: "你需要集中註意力。" },
+            { id: 994, word: "voisin", meaning: "鄰居", ex_kr: "Mon voisin est devenu fou.", ex_zh: "我的鄰居瘋了。" },
+            { id: 995, word: "entièrement", meaning: "完全", ex_kr: "C'est entièrement de ta faute.", ex_zh: "這完全是你的錯。" },
+            { id: 996, word: "courrier", meaning: "郵件", ex_kr: "Le courrier est arrivé.", ex_zh: "郵件到了。" },
+            { id: 997, word: "affronter", meaning: "面對", ex_kr: "Vous devriez affronter la réalité.", ex_zh: "你應該面對現實。" },
+            { id: 998, word: "impressionnant", meaning: "感人的", ex_kr: "C'est très impressionnant.", ex_zh: "那真是令人印象深刻。" },
+            { id: 999, word: "jaune", meaning: "黃色的", ex_kr: "Ne marchez pas dans la zone jaune.", ex_zh: "請勿進入黃色區域。" },
+            { id: 1000, word: "bibliothèque", meaning: "圖書館", ex_kr: "Ma maison est au nord de la bibliothèque.", ex_zh: "我家在圖書館北邊。" },
+            { id: 1001, word: "lentement", meaning: "緩慢地", ex_kr: "Il marche très lentement.", ex_zh: "他走路很慢。" },
+            { id: 1002, word: "personnellement", meaning: "親自", ex_kr: "Je ne le prends pas personnellement.", ex_zh: "我不會放在心上。" },
+            { id: 1003, word: "étape", meaning: "階段", ex_kr: "C'est le premier étape de mon plan.", ex_zh: "這是我計劃的第一步。" },
+            { id: 1004, word: "royaume", meaning: "王國", ex_kr: "Un royaume est dirigé par un roi ou une reine.", ex_zh: "王國由國王或女王統治。" },
+            { id: 1005, word: "courageux", meaning: "勇敢的", ex_kr: "Il est très courageux.", ex_zh: "他非常勇敢。" },
+            { id: 1006, word: "maîtresse", meaning: "情婦", ex_kr: "Vous êtes la maîtresse.", ex_zh: "你是女主人。" },
+            { id: 1007, word: "bouffe", meaning: "食物", ex_kr: "La bouffe est déjà sur la table.", ex_zh: "飯菜已經擺上桌了。" },
+            { id: 1008, word: "chanceux", meaning: "幸運的", ex_kr: "Un joueur chanceux gagnera tout l'argent.", ex_zh: "一位幸運玩家將贏得所有獎金。" },
+            { id: 1009, word: "tasse", meaning: "杯子", ex_kr: "Tu veux une tasse de thé ?", ex_zh: "你想喝杯茶嗎？" },
+            { id: 1010, word: "avouer", meaning: "坦白", ex_kr: "Il a avoué ne pas avoir dit la vérité.", ex_zh: "他承認自己沒有說實話。" },
+            { id: 1011, word: "soigner", meaning: "治癒", ex_kr: "Le travail d'un médecin est de soigner les malades.", ex_zh: "醫生的職責是治療病人。" },
+            { id: 1012, word: "aube", meaning: "黎明", ex_kr: "Le fermier se lève à l'aube pour nourrir les porcs.", ex_zh: "農夫每天黎明即起去餵豬。" },
+            { id: 1013, word: "miroir", meaning: "鏡子", ex_kr: "Où trouver un miroir?", ex_zh: "哪裡可以找到鏡子？" },
+            { id: 1014, word: "couvrir", meaning: "覆蓋", ex_kr: "Je vais te couvrir.", ex_zh: "我會掩護你。" },
+            { id: 1015, word: "épreuve", meaning: "測試", ex_kr: "L'étudiant a passé l'épreuve et a obtenu un bon résultat.", ex_zh: "該學生參加了考試，並且取得了不錯的成績。" },
+            { id: 1016, word: "remplir", meaning: "充滿", ex_kr: "Il remplit la bouteille d'eau.", ex_zh: "他把水瓶裝滿水。" },
+            { id: 1017, word: "égal", meaning: "平等的", ex_kr: "Les hommes et les femmes sont égaux devant la loi.", ex_zh: "法律面前人人平等。" },
+            { id: 1018, word: "retenir", meaning: "保持", ex_kr: "Il te faut te retenir.", ex_zh: "你需要克制自己。" },
+            { id: 1019, word: "moto", meaning: "摩托車", ex_kr: "Mon père m'a acheté une moto.", ex_zh: "我父親買了一輛摩托車給我。" },
+            { id: 1020, word: "annuler", meaning: "取消", ex_kr: "Devrions-nous annuler ?", ex_zh: "我們應該取消嗎？" },
+            { id: 1021, word: "séance", meaning: "會議", ex_kr: "La séance finira dans quelques minutes.", ex_zh: "會議將在幾分鐘後結束。" },
+            { id: 1022, word: "valise", meaning: "行李箱", ex_kr: "Où est ta valise ?", ex_zh: "你的行李箱在哪裡？" },
+            { id: 1023, word: "cochon", meaning: "豬", ex_kr: "Le fermier élève des cochons.", ex_zh: "這位農民養豬。" },
+            { id: 1024, word: "maudit", meaning: "被詛咒的", ex_kr: "Aidez-moi à quitter cet endroit maudit.", ex_zh: "救救我，讓我離開這個鬼地方。" },
+            { id: 1025, word: "poussière", meaning: "灰塵", ex_kr: "J'ai nettoyé la poussière du vieux livre.", ex_zh: "我擦掉了舊書上的灰塵。" },
+            { id: 1026, word: "printemps", meaning: "春天", ex_kr: "C'est le printemps que je préfère.", ex_zh: "春天是我最喜歡的季節。" },
+            { id: 1027, word: "interroger", meaning: "問題", ex_kr: "La police a interrogé le témoin.", ex_zh: "警方訊問了證人。" },
+            { id: 1028, word: "briser", meaning: "休息", ex_kr: "Il a brisé la fenêtre en jouant au basket.", ex_zh: "他打籃球的時候把窗戶打破了。" },
+            { id: 1029, word: "sauvage", meaning: "野蠻的", ex_kr: "Les ours sont des animaux sauvages.", ex_zh: "熊是野生動物。" },
+
+        ];
+
+        let srsData = {};
+        try {
+            srsData = JSON.parse(localStorage.getItem('fr_srs_v1') || "{}");
+        } catch(e) { srsData = {}; }
+
+        let quotaState = {
+            lastDate: "", dailyQueue: [], newBatchIds: [], reviewBatchIds: [], 
+            sessionDoneIds: [], sessionMistakeIds: [], reappearTimes: {}
+        };
+        try {
+            const savedQuota = localStorage.getItem('fr_quota_v1');
+            if (savedQuota) quotaState = Object.assign(quotaState, JSON.parse(savedQuota));
+        } catch(e) {}
+
+        let dueWords = [], previewIndex = 0, currentSubTab = 'new';
+        let filteredVocab = [];
+        let displayCount = 30;
+        const BATCH_SIZE = 30;
+        let sessionInitialized = false;
+
+        function isNewWord(id) {
+            if (!srsData[id] || !srsData[id].firstDiscoveryDate) return true;
+            const discovery = new Date(srsData[id].firstDiscoveryDate).toLocaleDateString();
+            return discovery === new Date().toLocaleDateString();
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function checkAndResetQuota() {
+            const today = new Date().toLocaleDateString();
+            const now = Date.now();
+            
+            if (quotaState.lastDate !== today) {
+                const unlearned = initialVocab.filter(v => !srsData[v.id]);
+                const news = shuffleArray([...unlearned]).slice(0, DAILY_NEW_LIMIT);
+                
+                news.forEach(v => { 
+                    if (!srsData[v.id]) srsData[v.id] = { firstDiscoveryDate: now, nextReview: 0, interval: 0 }; 
+                });
+
+                quotaState = { 
+                    lastDate: today, 
+                    dailyQueue: [], 
+                    newBatchIds: news.map(v => v.id), 
+                    reviewBatchIds: [], 
+                    sessionDoneIds: [], 
+                    sessionMistakeIds: [], 
+                    reappearTimes: {} 
+                };
+                sessionInitialized = false;
+            }
+
+            if (!sessionInitialized) {
+                const allDueReviews = initialVocab.filter(v => 
+                    srsData[v.id] && 
+                    !isNewWord(v.id) && 
+                    srsData[v.id].nextReview <= now
+                ).map(v => v.id);
+
+                quotaState.reviewBatchIds = shuffleArray([...allDueReviews]).slice(0, DAILY_REVIEW_LIMIT);
+                sessionInitialized = true;
+            }
+
+            const activeNewIds = quotaState.newBatchIds.filter(id => !quotaState.sessionDoneIds.includes(id));
+            const activeReviews = quotaState.reviewBatchIds.filter(id => !quotaState.sessionDoneIds.includes(id));
+            
+            quotaState.dailyQueue = shuffleArray([...activeNewIds, ...activeReviews]);
+
+            localStorage.setItem('fr_srs_v1', JSON.stringify(srsData));
+            localStorage.setItem('fr_quota_v1', JSON.stringify(quotaState));
+        }
+
+        function speak(text, rate = 1.0) {
+            if (!text || !window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.lang = 'fr-FR';
+            msg.rate = rate;
+            window.speechSynthesis.speak(msg);
+        }
+
+        function getPreviewCurrentData() {
+            const sourceIds = currentSubTab === 'new' ? quotaState.newBatchIds : quotaState.reviewBatchIds;
+            if (!sourceIds || sourceIds.length === 0) return null;
+            return initialVocab.find(v => v.id === sourceIds[previewIndex]);
+        }
+
+        function updatePreviewUI(autoSpeak = true) {
+            const cardContainer = document.getElementById('preview-card');
+            const cardInner = document.getElementById('preview-card-inner');
+            if(!cardContainer || !cardInner) return;
+
+            cardInner.classList.add('no-transition');
+            cardContainer.classList.remove('is-flipped');
+            void cardInner.offsetWidth; 
+            
+            const data = getPreviewCurrentData();
+            const sourceIds = currentSubTab === 'new' ? quotaState.newBatchIds : quotaState.reviewBatchIds;
+            
+            if (!sourceIds || sourceIds.length === 0 || !data) {
+                document.getElementById('preview-word-kr').innerText = "目前無單字";
+                document.getElementById('preview-progress-text').innerText = "0 / 0";
+                document.getElementById('preview-back-content').classList.add('hidden');
+            } else {
+                document.getElementById('preview-back-content').classList.remove('hidden');
+                const isDone = quotaState.sessionDoneIds.includes(data.id);
+                document.getElementById('preview-word-kr').innerText = data.word;
+                document.getElementById('preview-word-kr-back').innerText = data.word;
+                document.getElementById('preview-word-zh').innerText = data.meaning;
+                document.getElementById('preview-ex-kr').innerText = data.ex_kr;
+                document.getElementById('preview-ex-zh').innerText = data.ex_zh;
+                document.getElementById('preview-progress-text').innerText = `${previewIndex + 1} / ${sourceIds.length}`;
+                cardContainer.style.opacity = isDone ? "0.75" : "1";
+                document.getElementById('preview-tag').innerText = isDone ? "COMPLETED" : "PREVIEW";
+                
+                if (autoSpeak) speak(data.word);
+            }
+
+            setTimeout(() => {
+                cardInner.classList.remove('no-transition');
+            }, 10);
+        }
+
+        function handleVote(isSuccess) {
+            if (!dueWords[0]) return;
+            const id = dueWords[0].id;
+            const now = Date.now();
+            const isNew = isNewWord(id);
+            let message = "";
+
+            if (isSuccess) {
+                if (isNew) {
+                    srsData[id].interval = 1;
+                    srsData[id].nextReview = now + DAY_MS;
+                    message = "24小時後複習";
+                } else {
+                    srsData[id].interval = Math.max(1, (srsData[id].interval || 1) * MULTIPLIER);
+                    srsData[id].nextReview = now + (srsData[id].interval * DAY_MS);
+                    message = "複習完成";
+                }
+                
+                if (!quotaState.sessionDoneIds.includes(id)) {
+                    quotaState.sessionDoneIds.push(id);
+                }
+                delete quotaState.reappearTimes[id];
+                quotaState.dailyQueue = quotaState.dailyQueue.filter(qid => qid !== id);
+            } else {
+                if (isNew) {
+                    if (!quotaState.sessionMistakeIds.includes(id)) quotaState.sessionMistakeIds.push(id);
+                    const reappTime = now + HOUR_MS;
+                    quotaState.reappearTimes[id] = reappTime;
+                    srsData[id].nextReview = reappTime;
+                    quotaState.dailyQueue.push(quotaState.dailyQueue.shift());
+                    message = "一小時後補考";
+                } else {
+                    srsData[id].interval = 1;
+                    srsData[id].nextReview = now + DAY_MS;
+                    message = "24小時後重新複習";
+                    quotaState.dailyQueue = quotaState.dailyQueue.filter(qid => qid !== id);
+                    if (!quotaState.sessionDoneIds.includes(id)) quotaState.sessionDoneIds.push(id);
+                }
+            }
+            localStorage.setItem('fr_srs_v1', JSON.stringify(srsData));
+            localStorage.setItem('fr_quota_v1', JSON.stringify(quotaState));
+            renderLearn();
+            showToast(message);
+        }
+
+        function renderLearn() {
+            const now = Date.now();
+            const availableQueue = quotaState.dailyQueue.filter(id => {
+                const rt = quotaState.reappearTimes[id] || 0;
+                return now >= rt;
+            });
+
+            const cardContainer = document.getElementById('flashcard');
+            const cardInner = document.getElementById('flashcard-inner');
+            const limitUI = document.getElementById('limit-reached-ui');
+            if(!cardContainer || !cardInner) return;
+
+            cardInner.classList.add('no-transition');
+            cardContainer.classList.remove('is-flipped');
+            void cardInner.offsetWidth; 
+
+            const remainingReviews = quotaState.dailyQueue.filter(id => quotaState.reviewBatchIds.includes(id)).length;
+            const remainingNews = quotaState.dailyQueue.filter(id => quotaState.newBatchIds.includes(id)).length;
+            document.getElementById('review-progress').innerText = remainingReviews;
+            document.getElementById('new-progress').innerText = remainingNews;
+
+            if (availableQueue.length > 0) {
+                cardContainer.classList.remove('hidden');
+                limitUI.classList.add('hidden');
+                const data = initialVocab.find(v => v.id === availableQueue[0]);
+                dueWords = [data];
+                document.getElementById('word-kr').innerText = data.word;
+                document.getElementById('word-zh').innerText = data.meaning;
+                const isNew = isNewWord(data.id);
+                document.getElementById('card-tag').innerText = isNew ? 'New' : 'Reviewing';
+                document.getElementById('card-tag').className = `absolute top-6 left-6 text-xs font-mono font-bold px-2 py-1 rounded uppercase ${isNew ? 'bg-violet-100 text-violet-800' : 'bg-violet-100 text-violet-800'}`;
+                
+                speak(data.word);
+            } else {
+                cardContainer.classList.add('hidden');
+                limitUI.classList.remove('hidden');
+                const pTag = document.querySelector('#limit-reached-ui p');
+                if (quotaState.dailyQueue.length > 0) {
+                    pTag.innerText = "單字冷卻中，請稍後再試。";
+                } else {
+                    pTag.innerText = "本次會話已完成！";
+                }
+            }
+
+            setTimeout(() => {
+                cardInner.classList.remove('no-transition');
+            }, 10);
+        }
+
+        function formatTimeDiff(targetMs) {
+            const diff = targetMs - Date.now();
+            if (diff <= 0) return "Due";
+            const days = Math.floor(diff / DAY_MS);
+            const hours = Math.floor((diff % DAY_MS) / HOUR_MS);
+            if (days > 0) return `${days}d ${hours}hr`;
+            const mins = Math.floor((diff % HOUR_MS) / 60000);
+            return hours > 0 ? `${hours}hr ${mins}m` : `${mins}m`;
+        }
+
+        function renderList(append = false) {
+            const container = document.getElementById('vocab-list-container');
+            if (!container) return;
+            if (!append) {
+                container.innerHTML = '';
+                displayCount = BATCH_SIZE;
+                filteredVocab.sort((a, b) => (srsData[a.id]?.nextReview || Infinity) - (srsData[b.id]?.nextReview || Infinity));
+            }
+            filteredVocab.slice(append ? displayCount - BATCH_SIZE : 0, displayCount).forEach(v => {
+                const srs = srsData[v.id];
+                const div = document.createElement('div');
+                div.className = 'bg-white p-5 rounded-2xl shadow-sm border border-violet-50 transition-all cursor-pointer active:bg-violet-50';
+                let srsStatusText = "New", srsColorClass = "text-gray-400 text-xs"; 
+                if (srs && srs.nextReview > 0) { 
+                    srsStatusText = formatTimeDiff(srs.nextReview); 
+                    srsColorClass = srsStatusText === "Due" ? "text-violet-500 font-bold" : "text-violet-600 font-bold";
+                }
+                div.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-1">
+                                <span class="text-xl font-bold text-gray-800">${v.word}</span>
+                                <button class="p-3 text-violet-500 voice-list-btn voice-btn-z" data-word="${v.word}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217z"/></svg>
+                                </button>
+                            </div>
+                            <p class="text-sm text-gray-400 font-medium">${v.meaning}</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="uppercase tracking-tighter text-[10px] ${srsColorClass}">${srsStatusText}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-300 rotate-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 9l-7 7-7-7\" /></svg>
+                        </div>
+                    </div>
+                    <div class="details-content mt-4 pt-4 border-t border-violet-50 space-y-3">
+                        <div><p class="text-xs text-violet-600 font-bold mb-1 uppercase tracking-tighter">法文例句</p><p class="text-sm text-gray-700 font-medium leading-relaxed">${v.ex_kr}</p></div>
+                        <div><p class="text-xs text-violet-500 font-bold mb-1 uppercase tracking-tighter">例句翻譯</p><p class="text-xs text-gray-500">${v.ex_zh}</p></div>
+                    </div>
+                `;
+                div.onclick = (e) => e.target.closest('.voice-list-btn') ? (e.stopPropagation(), speak(e.target.closest('.voice-list-btn').dataset.word)) : div.classList.toggle('is-open');
+                container.appendChild(div);
+            });
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            if(!t) return;
+            t.innerText = msg; t.style.opacity = '1';
+            setTimeout(() => t.style.opacity = '0', 2500);
+        }
+
+        window.onload = () => {
+            checkAndResetQuota();
+            filteredVocab = [...initialVocab];
+            updatePreviewUI(false); 
+
+            const tabs = { today: 'view-today', learn: 'view-learn', list: 'view-list' };
+            Object.keys(tabs).forEach(key => {
+                const btn = document.getElementById(`tab-${key}-btn`);
+                if(!btn) return;
+                btn.onclick = function() {
+                    Object.values(tabs).forEach(v => document.getElementById(v).classList.add('hidden'));
+                    document.getElementById(tabs[key]).classList.remove('hidden');
+                    document.querySelectorAll('nav button').forEach(b => b.classList.replace('tab-active', 'text-gray-400'));
+                    this.classList.replace('text-gray-400', 'tab-active');
+                    
+                    if(key === 'learn') {
+                        checkAndResetQuota(); 
+                        renderLearn();
+                    } else if(key === 'list') {
+                        renderList();
+                    } else if(key === 'today') {
+                        checkAndResetQuota();
+                        updatePreviewUI(true);
+                    }
+                };
+            });
+
+            document.getElementById('subtab-new-btn').onclick = function() {
+                currentSubTab = 'new'; previewIndex = 0;
+                this.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all subtab-active';
+                document.getElementById('subtab-rev-btn').className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all text-violet-600';
+                updatePreviewUI();
+            };
+            document.getElementById('subtab-rev-btn').onclick = function() {
+                currentSubTab = 'rev'; previewIndex = 0;
+                this.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all subtab-active';
+                document.getElementById('subtab-new-btn').className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all text-violet-600';
+                updatePreviewUI();
+            };
+
+            document.getElementById('vocab-search').oninput = (e) => {
+                const val = e.target.value.toLowerCase();
+                filteredVocab = initialVocab.filter(v => v.word.toLowerCase().includes(val) || v.meaning.toLowerCase().includes(val));
+                renderList();
+            };
+
+            const observer = new IntersectionObserver((entries) => { 
+                if (entries[0].isIntersecting && displayCount < filteredVocab.length) { 
+                    displayCount += BATCH_SIZE; renderList(true); 
+                } 
+            });
+            observer.observe(document.getElementById('list-end-trigger'));
+
+            document.getElementById('preview-next-btn').onclick = () => {
+                const sourceIds = currentSubTab === 'new' ? quotaState.newBatchIds : quotaState.reviewBatchIds;
+                if (!sourceIds || sourceIds.length === 0) return;
+                previewIndex = (previewIndex + 1) % sourceIds.length;
+                updatePreviewUI();
+            };
+            document.getElementById('preview-prev-btn').onclick = () => {
+                const sourceIds = currentSubTab === 'new' ? quotaState.newBatchIds : quotaState.reviewBatchIds;
+                if (!sourceIds || sourceIds.length === 0) return;
+                previewIndex = (previewIndex - 1 + sourceIds.length) % sourceIds.length;
+                updatePreviewUI();
+            };
+
+            document.getElementById('preview-card').onclick = e => {
+                if (e.target.closest('.voice-btn-z')) return;
+                const data = getPreviewCurrentData();
+                if (!data) return;
+                const cardContainer = e.currentTarget;
+                const isFlipped = cardContainer.classList.toggle('is-flipped');
+                if (isFlipped) { setTimeout(() => speak(data.ex_kr, 1.0), 100); } else { speak(data.word, 1.0); }
+            };
+
+            document.getElementById('preview-voice-back-word-10').onclick = e => { e.stopPropagation(); speak(getPreviewCurrentData()?.word, 1.0); };
+            document.getElementById('preview-voice-ex-10').onclick = e => { e.stopPropagation(); speak(getPreviewCurrentData()?.ex_kr, 1.0); };
+            document.getElementById('preview-voice-ex-06').onclick = e => { e.stopPropagation(); speak(getPreviewCurrentData()?.ex_kr, 0.6); };
+
+            document.getElementById('flashcard').onclick = e => {
+                if (e.target.closest('.voice-btn-z') || e.target.closest('button')) return;
+                e.currentTarget.classList.toggle('is-flipped');
+            };
+
+            document.getElementById('learn-voice-btn-10').onclick = e => { e.stopPropagation(); if (dueWords.length > 0) speak(dueWords[0].word, 1.0); };
+            
+            document.getElementById('success-btn').onclick = e => { e.stopPropagation(); handleVote(true); };
+            document.getElementById('fail-btn').onclick = e => { e.stopPropagation(); handleVote(false); };
+            document.getElementById('reset-data-btn').onclick = () => confirm("確定要重置所有紀錄嗎？") && (localStorage.clear() || location.reload());
+        };
+    </script>
+</body>
+</html>

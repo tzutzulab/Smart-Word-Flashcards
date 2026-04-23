@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>智慧單字卡 - 學習中心</title>
+    
+    <!-- PWA 核心設定 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="智慧單字卡">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
+    
+    <!-- 外部資源 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
+            overflow: hidden;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 語言卡片交互樣式 */
+        .app-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-width: 2px;
+        }
+        .app-card:active {
+            transform: scale(0.97);
+            background-color: #ffffff;
+        }
+
+        /* 隱藏滾動條 */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 原生安裝提示組件 */
+        #installPrompt {
+            position: fixed;
+            bottom: 24px;
+            left: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 20px;
+            padding: 18px;
+            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            display: none; 
+            border: 1px solid #e2e8f0;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(150%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="h-screen flex items-center justify-center">
+
+    <!-- 系統原生安裝提示框 -->
+    <div id="installPrompt">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3 text-left">
+                <img src="icon.png" class="w-12 h-12 rounded-xl shadow-sm object-cover" alt="App Icon" onerror="this.src='https://ui-avatars.com/api/?name=Card&background=0EA5E9&color=fff'">
+                <div>
+                    <h3 class="text-sm font-bold text-gray-800">安裝智慧單字卡</h3>
+                    <p class="text-xs text-gray-500">立即安裝以享受全螢幕學習體驗</p>
+                </div>
+            </div>
+            <div class="flex space-x-2 shrink-0">
+                <button onclick="closePrompt()" class="text-xs text-gray-400 px-2 py-1">稍後</button>
+                <button id="installBtn" class="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm active:bg-blue-700">立即安裝</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主選單內容 -->
+    <main class="max-w-2xl mx-auto px-6 w-full flex flex-col items-center justify-center overflow-y-auto py-10">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-gray-800 tracking-wider">智慧單字卡</h1>
+            <p class="text-gray-500 text-sm mt-2 font-medium">個人語言學習中心</p>
+        </header>
+
+        <div class="flex flex-col space-y-4 w-full">
+            <!-- 韓文 -->
+            <a href="韓文智慧單字卡(完整版).html">
+                <div class="app-card bg-[#F0F9FF] border-[#BAE6FD] rounded-2xl p-5 flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-3xl">🇰🇷</span>
+                        <h2 class="text-lg font-bold text-gray-800">韓文智慧單字卡</h2>
+                    </div>
+                    <div class="bg-[#0EA5E9] text-white text-[11px] py-1.5 px-4 rounded-full font-bold">進入</div>
+                </div>
+            </a>
+
+            <!-- 日文 -->
+            <a href="日文智慧單字卡(完整版).html">
+                <div class="app-card bg-[#FFF1F2] border-[#FECDD3] rounded-2xl p-5 flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-3xl">🇯🇵</span>
+                        <h2 class="text-lg font-bold text-gray-800">日文智慧單字卡</h2>
+                    </div>
+                    <div class="bg-[#F43F5E] text-white text-[11px] py-1.5 px-4 rounded-full font-bold">進入</div>
+                </div>
+            </a>
+
+            <!-- 西文 -->
+            <a href="西文智慧單字卡(完整版).html">
+                <div class="app-card bg-[#F0FDFA] border-[#CCFBF1] rounded-2xl p-5 flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-3xl">🇪🇸</span>
+                        <h2 class="text-lg font-bold text-gray-800">西文智慧單字卡</h2>
+                    </div>
+                    <div class="bg-[#14B8A6] text-white text-[11px] py-1.5 px-4 rounded-full font-bold">進入</div>
+                </div>
+            </a>
+
+            <!-- 法文 -->
+            <a href="法文智慧單字卡(完整版).html">
+                <div class="app-card bg-[#F5F3FF] border-[#DDD6FE] rounded-2xl p-5 flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-3xl">🇫🇷</span>
+                        <h2 class="text-lg font-bold text-gray-800">法文智慧單字卡</h2>
+                    </div>
+                    <div class="bg-[#8B5CF6] text-white text-[11px] py-1.5 px-4 rounded-full font-bold">進入</div>
+                </div>
+            </a>
+
+            <!-- 英文 -->
+            <a href="英文智慧單字卡(完整版).html">
+                <div class="app-card bg-[#FEFCE8] border-[#FEF08A] rounded-2xl p-5 flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-3xl">🇺🇸</span>
+                        <h2 class="text-lg font-bold text-gray-800">英文智慧單字卡</h2>
+                    </div>
+                    <div class="bg-[#FACC15] text-gray-800 text-[11px] py-1.5 px-4 rounded-full font-bold">進入</div>
+                </div>
+            </a>
+        </div>
+        
+        <footer class="mt-12 text-gray-300 text-[10px] uppercase tracking-widest">
+            Native App Mode v1.2
+        </footer>
+    </main>
+
+    <script>
+        // 註冊 Service Worker 並監控狀態
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                .then(reg => {
+                    console.log('SW 註冊成功，範圍:', reg.scope);
+                    // 檢查 SW 是否已激活 (Active)
+                    if (reg.active) {
+                        console.log('SW 目前狀態：已激活 (Active)');
+                    } else {
+                        console.log('SW 目前狀態：安裝中/等待中，請嘗試重新整理頁面。');
+                    }
+                })
+                .catch(err => console.error('SW 註冊失敗，請確認 sw.js 檔案路徑:', err));
+            });
+        }
+
+        let deferredPrompt;
+        const installPrompt = document.getElementById('installPrompt');
+        const installBtn = document.getElementById('installBtn');
+
+        // 偵測機制：如果 5 秒內沒觸發 beforeinstallprompt，提示開發者檢查環境
+        let promptTriggered = false;
+        setTimeout(() => {
+            if (!promptTriggered) {
+                console.warn('PWA 診斷：尚未觸發安裝事件。');
+                console.log('檢查清單：');
+                console.log('1. 是否使用 HTTPS？ (PWA 強制要求)');
+                console.log('2. manifest.json 內容是否正確？ (可檢查 DevTools -> Application -> Manifest)');
+                console.log('3. 是否已存在 icon.png？ (至少需要 192x192)');
+            }
+        }, 5000);
+
+        // 監聽原生安裝事件
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('系統偵測到 PWA 安裝許可條件已達成');
+            promptTriggered = true;
+            e.preventDefault();
+            deferredPrompt = e;
+            installPrompt.style.display = 'block';
+        });
+
+        // 點擊「立即安裝」按鈕喚起系統視窗
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`使用者安裝選擇: ${outcome}`);
+            deferredPrompt = null;
+            installPrompt.style.display = 'none';
+        });
+
+        function closePrompt() {
+            installPrompt.style.display = 'none';
+        }
+
+        window.addEventListener('appinstalled', () => {
+            console.log('App 已成功安裝');
+            installPrompt.style.display = 'none';
+            deferredPrompt = null;
+        });
+    </script>
+</body>
+</html>
