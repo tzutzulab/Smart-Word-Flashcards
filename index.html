@@ -9,13 +9,13 @@
     
     <!-- PWA 核心設定 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <!-- 修改此處：設為 default 配合白色背景，系統圖示會顯示為深色 -->
+    <!-- 確保設為 default，白色背景下系統圖示才會自動變深色 -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="智慧單字卡">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- 修改此處：將主題色固定為白色 -->
-    <meta name="theme-color" content="#ffffff">
+    <!-- 將主題色固定為白色 -->
+    <meta name="theme-color" id="status-bar-color" content="#ffffff">
     
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="./icon.png">
@@ -160,7 +160,11 @@
     </main>
 
     <script>
-        // 檢查環境是否支援 Service Worker
+        // 1. 強制確保首頁導覽列為白色
+        const metaTheme = document.getElementById('status-bar-color');
+        if (metaTheme) metaTheme.setAttribute('content', '#ffffff');
+
+        // 2. 檢查環境是否支援 Service Worker
         const isSecureContext = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
 
         if ('serviceWorker' in navigator && isSecureContext) {
@@ -178,8 +182,6 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            
-            // 檢查本次會話是否已顯示過
             if (!sessionStorage.getItem('flashcardInstallShown')) {
                 setTimeout(() => {
                     installPrompt.style.display = 'block';
